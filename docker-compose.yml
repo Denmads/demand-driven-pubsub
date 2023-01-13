@@ -1,4 +1,4 @@
-version: 3
+version: "3"
 
 services:
   mqtt:
@@ -15,7 +15,9 @@ services:
       - "7474:7474"
       - "7687:7687"
     volumes:
-      - neo
+      - neo:/data
+    environment:
+      - NEO4J_AUTH=neo4j/test1234
 
 volumes:
   neo:
