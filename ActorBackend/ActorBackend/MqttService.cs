@@ -1,29 +1,70 @@
 ﻿using ActorBackend.Config;
+using ActorBackend.SystemSubscribtions;
 using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Client;
+using MQTTnet.Server;
 using System.Text.Json;
 
 namespace ActorBackend
 {
     public class MqttService : IHostedService, IDisposable
     {
-        private readonly ILogger logger;
         private MqttFactory mqttFactory;
+        private readonly ILoggerFactory loggerFactory;
+        private readonly ILogger logger;
 
         private AppConfig config;
         private IMqttClient mqttClient;
 
-        public MqttService(IOptions<AppConfig> config, ILogger<MqttService> logger)
+        private Dictionary<string, ISystemSubscription> subscriptions;
+
+        public MqttService(IOptions<AppConfig> config, ILoggerFactory loggerFactory)
         {
             this.config = config.Value;
-            this.logger = logger;
+            this.loggerFactory = loggerFactory;
+            this.logger = loggerFactory.CreateLogger<MqttService>();
+
+            subscriptions = new Dictionary<string, ISystemSubscription>();
 
             mqttFactory = new MqttFactory();
             mqttClient = mqttFactory.CreateMqttClient();
+
+            CreateSubscriptions();
+        }
+
+        private void CreateSubscriptions()
+        {
+            var sub = new HeartbeatSubcription(config, loggerFactory.CreateLogger<HeartbeatSubcription>());
+            subscriptions.Add(sub.Topic, sub);
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            await ConnectMqttClient(cancellationToken);
+
+            foreach (var subscription in subscriptions.Values)
+            {
+                mqttClient.ApplicationMessageReceivedAsync += args =>
+                {
+                    if (subscriptions.ContainsKey(args.ApplicationMessage.Topic))
+                    {
+                        var sub = subscriptions!.GetValueOrDefault(args.ApplicationMessage.Topic, null);
+                        if (sub != null)
+                        {
+                            return sub.OnMessage(args);
+                        }
+                    }
+
+                    return Task.CompletedTask;
+                };
+
+                await mqttClient.SubscribeAsync(subscription.Topic);
+                logger.LogInformation($"System subscribed to topic: {subscription.Topic}");
+            }
+        }
+
+        private async Task ConnectMqttClient(CancellationToken cancellationToken)
         {
             logger.LogInformation($"Connecting to broker: {config.MQTT.Host}:{config.MQTT.Port}");
 
@@ -31,7 +72,7 @@ namespace ActorBackend
                 .WithCleanSession()
                 .WithClientId("DDPS")
                 .WithTcpServer(
-                    config.MQTT.Host ?? "localhost", 
+                    config.MQTT.Host ?? "localhost",
                     int.Parse(config.MQTT.Port ?? "1883")
                 ).Build();
 
@@ -48,6 +89,12 @@ namespace ActorBackend
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
+            foreach (var subscription in subscriptions.Values)
+            {
+                await mqttClient.UnsubscribeAsync(subscription.Topic);
+                logger.LogInformation($"System unsubscribed from topic: {subscription.Topic}");
+            }
+
             var options = mqttFactory.CreateClientDisconnectOptionsBuilder().Build();
             await mqttClient.DisconnectAsync(options, cancellationToken);
         }

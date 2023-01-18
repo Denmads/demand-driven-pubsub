@@ -2,7 +2,8 @@
 {
     public class MqttConfig
     {
-        public String Host { get; set; }
-        public String Port { get; set; }
+        public string Host { get; set; }
+        public string Port { get; set; }
+        public string TopicPrefix { get; set; }
     }
 }

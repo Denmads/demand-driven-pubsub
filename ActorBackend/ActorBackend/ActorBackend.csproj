@@ -9,7 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MQTTnet" Version="4.1.4.563"/>
+    <PackageReference Include="Grpc.Tools" Version="2.51.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="MQTTnet" Version="4.1.4.563" />
+    <PackageReference Include="Proto.Actor" Version="1.0.0" />
+    <PackageReference Include="Proto.Cluster" Version="1.0.0" />
+    <PackageReference Include="Proto.Cluster.CodeGen" Version="1.0.0" />
+    <PackageReference Include="Proto.Cluster.TestProvider" Version="1.0.0" />
+    <PackageReference Include="Proto.Remote" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
