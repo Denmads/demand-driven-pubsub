@@ -19,6 +19,18 @@ services:
     environment:
       - NEO4J_AUTH=neo4j/test1234
 
+  server:
+    image: actor-server
+    build: 
+      context: ActorBackend
+      dockerfile: ./ActorBackend/Dockerfile
+    ports:
+      - "4545:4545"
+    depends_on:
+      - mqtt
+      - neo4j
+
+
 volumes:
   neo:
 
