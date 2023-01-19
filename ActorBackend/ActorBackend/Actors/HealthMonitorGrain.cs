@@ -32,6 +32,7 @@ namespace ActorBackend.Actors
                 var timeSinceLastHeartbeat = DateTime.Now - client.Value;
                 if (timeSinceLastHeartbeat.TotalSeconds > config.Backend.HealthMonitor.MinimumTimeForDeadClient)
                 {
+                    clients.Remove(client.Key);
                     //Do something
                 }
             }
