@@ -35,15 +35,9 @@ namespace ActorBackend.Config
                     identityLookup: new PartitionIdentityLookup()
                 )
                 .WithClusterKind(
-                    kind: SmartBulbGrainActor.Kind,
+                    kind: HealthMonitorGrainActor.Kind,
                     prop: Props.FromProducer(() => 
-                        new SmartBulbGrainActor((context, clusterIdentity) => new SmartBulbGrain(context, clusterIdentity))
-                    )
-                )
-                .WithClusterKind(
-                    kind: SmartHouseGrainActor.Kind,
-                    prop: Props.FromProducer(() =>
-                        new SmartHouseGrainActor((context, clusterIdentity) => new SmartHouseGrain(context, clusterIdentity))
+                        new HealthMonitorGrainActor((context, clusterIdentity) => new HealthMonitorGrain(context, config))
                     )
                 );
 

@@ -23,6 +23,6 @@ namespace ActorBackend.SystemSubscribtions
             this.mqttClient = mqttClient;
         }
 
-        public abstract Task OnMessage(MqttApplicationMessageReceivedEventArgs args);
+        public abstract Task OnMessage(MqttApplicationMessageReceivedEventArgs args, CancellationToken cancellationToken);
     }
 }

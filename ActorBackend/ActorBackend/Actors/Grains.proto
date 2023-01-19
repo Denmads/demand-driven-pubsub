@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+option csharp_namespace = "ActorBackend.Actors";
+
+import "google/protobuf/empty.proto";
+import "Messages.proto";
+
+service HealthMonitorGrain {
+  rpc NotifyOfHeartbeatResponse (HeartbeatReceivedMessage) returns (google.protobuf.Empty);
+}

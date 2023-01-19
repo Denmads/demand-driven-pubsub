@@ -42,8 +42,6 @@ namespace ActorBackend
         {
             var heart = new HeartbeatSubcription(config, loggerFactory.CreateLogger<HeartbeatSubcription>(), actorSystem, mqttClient);
             subscriptions.Add(heart.Topic, heart);
-            var sub = new BulbSubscription(config, loggerFactory.CreateLogger<BulbSubscription>(), actorSystem, mqttClient);
-            subscriptions.Add(sub.Topic, sub);
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -60,7 +58,7 @@ namespace ActorBackend
                     var sub = subscriptions!.GetValueOrDefault(args.ApplicationMessage.Topic, null);
                     if (sub != null)
                     {
-                        return sub.OnMessage(args);
+                        return sub.OnMessage(args, cancellationToken);
                     }
                 }
 
