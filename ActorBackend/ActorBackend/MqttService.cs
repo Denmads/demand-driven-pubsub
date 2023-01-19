@@ -1,9 +1,11 @@
 ﻿using ActorBackend.Config;
 using ActorBackend.SystemSubscribtions;
+using ActorBackend.SystemSubscriptions;
 using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Server;
+using Proto;
 using System.Text.Json;
 
 namespace ActorBackend
@@ -14,18 +16,21 @@ namespace ActorBackend
         private readonly ILoggerFactory loggerFactory;
         private readonly ILogger logger;
 
+        private ActorSystem actorSystem;
+
         private AppConfig config;
         private IMqttClient mqttClient;
 
-        private Dictionary<string, ISystemSubscription> subscriptions;
+        private Dictionary<string, SystemSubscription> subscriptions;
 
-        public MqttService(IOptions<AppConfig> config, ILoggerFactory loggerFactory)
+        public MqttService(IOptions<AppConfig> config, ILoggerFactory loggerFactory, ActorSystem actorSystem)
         {
             this.config = config.Value;
             this.loggerFactory = loggerFactory;
             this.logger = loggerFactory.CreateLogger<MqttService>();
+            this.actorSystem = actorSystem;
 
-            subscriptions = new Dictionary<string, ISystemSubscription>();
+            subscriptions = new Dictionary<string, SystemSubscription>();
 
             mqttFactory = new MqttFactory();
             mqttClient = mqttFactory.CreateMqttClient();
@@ -35,7 +40,9 @@ namespace ActorBackend
 
         private void CreateSubscriptions()
         {
-            var sub = new HeartbeatSubcription(config, loggerFactory.CreateLogger<HeartbeatSubcription>());
+            var heart = new HeartbeatSubcription(config, loggerFactory.CreateLogger<HeartbeatSubcription>(), actorSystem, mqttClient);
+            subscriptions.Add(heart.Topic, heart);
+            var sub = new BulbSubscription(config, loggerFactory.CreateLogger<BulbSubscription>(), actorSystem, mqttClient);
             subscriptions.Add(sub.Topic, sub);
         }
 
@@ -43,22 +50,25 @@ namespace ActorBackend
         {
             await ConnectMqttClient(cancellationToken);
 
+            //Add event handler for subscriptions
+            mqttClient.ApplicationMessageReceivedAsync += args =>
+            {
+                logger.LogDebug($"Received '{args.ApplicationMessage.ConvertPayloadToString()}' on topic '{args.ApplicationMessage.Topic}'");
+                if (subscriptions.ContainsKey(args.ApplicationMessage.Topic))
+                {
+
+                    var sub = subscriptions!.GetValueOrDefault(args.ApplicationMessage.Topic, null);
+                    if (sub != null)
+                    {
+                        return sub.OnMessage(args);
+                    }
+                }
+
+                return Task.CompletedTask;
+            };
+
             foreach (var subscription in subscriptions.Values)
             {
-                mqttClient.ApplicationMessageReceivedAsync += args =>
-                {
-                    if (subscriptions.ContainsKey(args.ApplicationMessage.Topic))
-                    {
-                        var sub = subscriptions!.GetValueOrDefault(args.ApplicationMessage.Topic, null);
-                        if (sub != null)
-                        {
-                            return sub.OnMessage(args);
-                        }
-                    }
-
-                    return Task.CompletedTask;
-                };
-
                 await mqttClient.SubscribeAsync(subscription.Topic);
                 logger.LogInformation($"System subscribed to topic: {subscription.Topic}");
             }

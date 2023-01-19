@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -20,5 +20,11 @@
     <PackageReference Include="Proto.Cluster.TestProvider" Version="1.0.0" />
     <PackageReference Include="Proto.Remote" Version="1.0.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Actors/Messages.proto" />
+    <ProtoGrain Include="Actors/Grains.proto" AdditionalImportDirs="Actors" />
+  </ItemGroup>
+
 
 </Project>

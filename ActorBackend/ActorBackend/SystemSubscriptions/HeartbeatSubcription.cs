@@ -1,23 +1,22 @@
 ﻿using ActorBackend.Config;
 using MQTTnet;
 using MQTTnet.Client;
+using Proto;
 
 namespace ActorBackend.SystemSubscribtions
 {
-    public class HeartbeatSubcription : ISystemSubscription
+    public class HeartbeatSubcription : SystemSubscription
     {
-        public string Topic { get; set; }
+        public HeartbeatSubcription(AppConfig config, ILogger logger, ActorSystem actorSystem, IMqttClient mqttClient) 
+            : base("/system/heartbeat/response", config, logger, actorSystem, mqttClient)
+        {}
 
-        private ILogger logger;
-
-        public HeartbeatSubcription(AppConfig config, ILogger<HeartbeatSubcription> logger)
+        public override Task OnMessage(MqttApplicationMessageReceivedEventArgs args)
         {
-            Topic = config.MQTT.TopicPrefix + "/system/heartbeat/response";
-            this.logger = logger;
-        }
+            var mes = args.ApplicationMessage.ConvertPayloadToString();
 
-        public Task OnMessage(MqttApplicationMessageReceivedEventArgs args)
-        {
+            logger.LogDebug($"Received message heartbeat: {mes}") ;
+
             return Task.CompletedTask;
         }
     }
