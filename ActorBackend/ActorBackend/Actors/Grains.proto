@@ -5,6 +5,12 @@ option csharp_namespace = "ActorBackend.Actors";
 import "google/protobuf/empty.proto";
 import "Messages.proto";
 
-service HealthMonitorGrain {
-  rpc NotifyOfHeartbeatResponse (HeartbeatReceivedMessage) returns (google.protobuf.Empty);
+service ClientManager {
+	rpc ClientConnected (ClientConnectedMessage) returns (google.protobuf.Empty);
+}
+
+service Client {
+	rpc CreateClient (CreateClientInfo) returns (google.protobuf.Empty);
+	rpc SendHeartbeat (google.protobuf.Empty) returns (google.protobuf.Empty);
+	rpc NotifyOfHeartbeatResponse (google.protobuf.Empty) returns (google.protobuf.Empty);
 }

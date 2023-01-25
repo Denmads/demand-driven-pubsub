@@ -2,6 +2,10 @@ syntax = "proto3";
 
 option csharp_namespace = "ActorBackend.Actors";
 
-message HeartbeatReceivedMessage {
-	string client_identity = 1;
+message ClientConnectedMessage {
+	string client_id = 1;
+}
+
+message CreateClientInfo {
+	string client_id = 1;
 }

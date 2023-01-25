@@ -1,6 +1,5 @@
 ﻿using ActorBackend.Config;
 using ActorBackend.SystemSubscribtions;
-using ActorBackend.SystemSubscriptions;
 using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Client;
