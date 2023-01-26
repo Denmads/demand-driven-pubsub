@@ -33,13 +33,14 @@ namespace ActorBackend.Config
 
                     //https://proto.actor/docs/cluster/identity-lookup-net/
                     identityLookup: new PartitionIdentityLookup()
-                );
-                /*.WithClusterKind(
-                    kind: HealthMonitorGrainActor.Kind,
+                )
+                .WithClusterKind(
+                    kind: ClientGrainActor.Kind,
                     prop: Props.FromProducer(() =>
-                        new HealthMonitorGrainActor((context, clusterIdentity) => new HealthMonitorGrain(context, config))
-                    )
-                );*/
+                        new ClientGrainActor((context, clusterIdentity) =>
+                            new ClientGrain(context, clusterIdentity, config)
+                        ))
+                );
 
 
                 //Debuggin of actor framework

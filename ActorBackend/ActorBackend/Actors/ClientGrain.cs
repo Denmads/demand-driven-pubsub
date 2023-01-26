@@ -1,22 +1,31 @@
 ﻿using ActorBackend.Config;
+using ActorBackend.HealthMonitoring;
 using MQTTnet;
 using MQTTnet.Client;
 using Proto;
-using System.Threading;
+using Proto.Cluster;
+using Timer = System.Timers.Timer;
 
 namespace ActorBackend.Actors
 {
-    public class ClientGrain : ClientBase
+    public class ClientGrain : ClientGrainBase
     {
+
         private AppConfig config;
         private IMqttClient mqttClient;
 
+        private ClusterIdentity identity;
+
         private string? clientId = null;
+        private ClientConnectionState connectionState;
 
+        private ILogger logger;
 
-        public ClientGrain(IContext context, AppConfig config) : base(context)
+        public ClientGrain(IContext context, ClusterIdentity identity, AppConfig config) : base(context)
         {
             this.config = config;
+            this.identity = identity;
+
             CreateAndConnectMqttClient();
         }
 
@@ -36,21 +45,21 @@ namespace ActorBackend.Actors
             mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
 
         }
-        public override Task CreateClient(CreateClientInfo request)
+        public override Task Connect(ClientConnectInfo request)
         {
             clientId = request.ClientId;
+            logger = Proto.Log.CreateLogger($"client/{clientId}");
+            connectionState = new ClientConnectionState(mqttClient, config, clientId);
+
+            //DEBUG - REMOVE
+            var timer = new Timer(2000);
+            timer.Elapsed += (_, _) =>
+            {
+                logger.LogWarning($"Client({clientId}): {connectionState.CurrentState}");
+            };
+            timer.Start();
 
             return Task.CompletedTask;
-        }
-
-        public override Task NotifyOfHeartbeatResponse()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override Task SendHeartbeat()
-        {
-            throw new NotImplementedException();
         }
 
     }

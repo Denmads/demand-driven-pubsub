@@ -5,12 +5,9 @@ option csharp_namespace = "ActorBackend.Actors";
 import "google/protobuf/empty.proto";
 import "Messages.proto";
 
-service ClientManager {
-	rpc ClientConnected (ClientConnectedMessage) returns (google.protobuf.Empty);
+service ClientManagerGrain {
 }
 
-service Client {
-	rpc CreateClient (CreateClientInfo) returns (google.protobuf.Empty);
-	rpc SendHeartbeat (google.protobuf.Empty) returns (google.protobuf.Empty);
-	rpc NotifyOfHeartbeatResponse (google.protobuf.Empty) returns (google.protobuf.Empty);
+service ClientGrain {
+	rpc Connect (ClientConnectInfo) returns (google.protobuf.Empty);
 }

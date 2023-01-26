@@ -2,10 +2,6 @@ syntax = "proto3";
 
 option csharp_namespace = "ActorBackend.Actors";
 
-message ClientConnectedMessage {
-	string client_id = 1;
-}
-
-message CreateClientInfo {
+message ClientConnectInfo {
 	string client_id = 1;
 }
