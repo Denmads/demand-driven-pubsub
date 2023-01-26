@@ -1,6 +1,5 @@
 ﻿using ActorBackend.Config;
 using ActorBackend.SystemSubscribtions;
-using ActorBackend.SystemSubscriptions;
 using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Client;
@@ -40,8 +39,8 @@ namespace ActorBackend
 
         private void CreateSubscriptions()
         {
-            var heart = new HeartbeatSubcription(config, loggerFactory.CreateLogger<HeartbeatSubcription>(), actorSystem, mqttClient);
-            subscriptions.Add(heart.Topic, heart);
+            //var heart = new HeartbeatSubcription(config, loggerFactory.CreateLogger<ConnectionSubcription>(), actorSystem, mqttClient);
+            //subscriptions.Add(heart.Topic, heart);
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)

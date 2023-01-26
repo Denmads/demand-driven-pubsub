@@ -24,10 +24,16 @@ namespace ActorBackend
             var system = app.Services.GetRequiredService<ActorSystem>();
             system.Root.SpawnNamed(
                 Props.FromProducer(
-                    () => new HealthMonitorGrainActor((context, clusterIdentity) => new HealthMonitorGrain(context, config.Value))
+                    () => new ClientManagerGrainActor((context, clusterIdentity) => new ClientManagerGrain(context, config.Value))
                 ),
-                "health-monitor"
+                "client-manager"
             );
+            //system.Root.SpawnNamed(
+            //    Props.FromProducer(
+            //        () => new HealthMonitorGrainActor((context, clusterIdentity) => new HealthMonitorGrain(context, config.Value))
+            //    ),
+            //    "health-monitor"
+            //);
 
             app.Run();
         }
