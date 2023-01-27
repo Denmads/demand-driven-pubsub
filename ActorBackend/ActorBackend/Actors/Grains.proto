@@ -11,3 +11,8 @@ service ClientManagerGrain {
 service ClientGrain {
 	rpc Connect (ClientConnectInfo) returns (google.protobuf.Empty);
 }
+
+service QueryResolverGrain {
+	rpc ResolvePublishQuery (PublishQueryInfo) returns (google.protobuf.Empty);
+	rpc ResolveSubscribeQuery (SubscribeQueryInfo) returns (google.protobuf.Empty);
+}

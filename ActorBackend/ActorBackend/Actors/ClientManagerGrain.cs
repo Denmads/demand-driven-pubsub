@@ -53,7 +53,7 @@ namespace ActorBackend.Actors
 
                 await Context.Cluster().GetClientGrain(clientId).Connect(new ClientConnectInfo() { ClientId = clientId}, CancellationToken.None);
             };
-            mqttClient.SubscribeAsync(config.MQTT.TopicPrefix + "/clientmanager");
+            mqttClient.SubscribeAsync(MqttTopicHelper.ClientManagerConnect());
 
             logger.LogInformation($"Client Manager Started");
         }

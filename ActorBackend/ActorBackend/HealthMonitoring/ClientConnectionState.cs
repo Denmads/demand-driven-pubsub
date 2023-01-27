@@ -16,6 +16,7 @@ namespace ActorBackend.HealthMonitoring
         private AppConfig config;
         private string clientId;
 
+
         private System.Timers.Timer checkTimer;
 
         private DateTime lastResponseTime;
@@ -38,11 +39,17 @@ namespace ActorBackend.HealthMonitoring
 
         private void SubscribeToHeartbeatResponse()
         {
-            mqttClient.SubscribeAsync(config.MQTT.TopicPrefix + $"/{clientId}" + config.Backend.HealthMonitor.HeartbeatTopic);
+            mqttClient.SubscribeAsync(
+                MqttTopicHelper.ClientHeartbeat(clientId), 
+                MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce);
+
             mqttClient.ApplicationMessageReceivedAsync += args =>
             {
-                lastResponseTime = DateTime.UtcNow;
-                CurrentState = State.Alive;
+                if (args.ApplicationMessage.Topic == MqttTopicHelper.ClientHeartbeat(clientId))
+                {
+                    lastResponseTime = DateTime.UtcNow;
+                    CurrentState = State.Alive;
+                }
 
                 return Task.CompletedTask;
             };

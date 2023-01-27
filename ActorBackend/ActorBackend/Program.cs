@@ -20,20 +20,21 @@ namespace ActorBackend
             app.MapGet("/", () => "Hello World!");
 
             var config = app.Services.GetRequiredService<IOptions<AppConfig>>();
+            MqttTopicHelper.config = config.Value;
 
             var system = app.Services.GetRequiredService<ActorSystem>();
             system.Root.SpawnNamed(
                 Props.FromProducer(
                     () => new ClientManagerGrainActor((context, clusterIdentity) => new ClientManagerGrain(context, config.Value))
                 ),
-                "client-manager"
+                SingletonActorIdentities.CLIENT_MANAGER
             );
-            //system.Root.SpawnNamed(
-            //    Props.FromProducer(
-            //        () => new HealthMonitorGrainActor((context, clusterIdentity) => new HealthMonitorGrain(context, config.Value))
-            //    ),
-            //    "health-monitor"
-            //);
+            system.Root.SpawnNamed(
+                Props.FromProducer(
+                    () => new QueryResolverGrainActor((context, clusterIdentity) => new QueryResolverGrain(context, config.Value))
+                ),
+                SingletonActorIdentities.QUERY_RESOLVER
+            );
 
             app.Run();
         }

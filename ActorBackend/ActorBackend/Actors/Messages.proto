@@ -5,3 +5,16 @@ option csharp_namespace = "ActorBackend.Actors";
 message ClientConnectInfo {
 	string client_id = 1;
 }
+
+message PublishQueryInfo {
+	string client_actor_identity = 1;
+	string cypher_script = 2;
+	string stream_node = 3;
+	string data_type = 4;
+}
+
+message SubscribeQueryInfo {
+	string client_actor_identity = 1;
+	string cypher_script = 2;
+	string input_nodes = 3;
+}
