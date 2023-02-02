@@ -1,3 +1,4 @@
+import asyncio
 import paho.mqtt.client as mqtt
 import time
 import select
@@ -19,9 +20,10 @@ class Client:
         self.heartbeat_topic = f"ddps/system/{self.id}/heartbeat"
         self.heartbeat_interval = 10
 
-        self.request_id = 1 # goes up when sending a message on query_topic 
-        self.chyper = ""
-        self.return_value = ""
+        self.request_id = 0 # goes up when sending a message on query_topic 
+        self.cypher = ""
+        self.target_node = []
+        self.data_type = "int"
         self.return_value = ""
 
         self.client = mqtt.Client()
@@ -45,10 +47,7 @@ class Client:
     def on_message(self, client, userdata, msg):
         payload = msg.payload.decode('utf-8')
         print(f'Received message on topic {msg.topic}: {payload}')
-        if msg.topic == "income":
-            print("got it")
-            client.publish("receive","got it!")
-        elif msg.topic == self.response_topic:
+        if msg.topic == self.response_topic:
             heartbeatInterval = self.handleResponse(payload)
             self.heartbeat_interval = heartbeatInterval
 
@@ -56,8 +55,42 @@ class Client:
         print("Connected with result code "+str(rc))
         client.subscribe("income")  
         client.subscribe(self.response_topic)
-    
 
+    def set_publish_topic(self, topic):
+        self.publish_topic = topic
+    
+    def set_subscirbe_topic(self, topic):
+        self.subscribe_topic = topic
+
+    def give_cypher(self, cypher):
+        self.cypher = cypher
+
+    def send_query(self):
+        query = """publish<>{{"RequestId": "{0}", "CypherQuery": "{1}", "TargetNode": {2}, "DataType": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, self.data_type)
+        self.request_id += 1
+        self.client.publish(self.query_topicc, query)
+        return query
+
+    def old_start_heartbeat(self):
+        while True:
+            self.client.loop()
+            self.client.publish(self.heartbeat_topic, f"falmebeat")
+
+            ready = select.select([self.client._sock],[],[],self.heartbeat_interval)
+            if ready[0]:
+                self.client.loop() # handle incoming messages
+            else:
+                pass
+
+    async def start_heartbeat(self):
+        while True:
+            self.client.publish(self.heartbeat_topic, f"beat")
+            await asyncio.sleep(self.heartbeat_interval)
+           
+    async def start_loop(self):
+        while True:
+            self.client.loop()
+            await asyncio.sleep(1)
 
 if __name__ =="__main__":
     c = Client("temp4")
@@ -66,7 +99,7 @@ if __name__ =="__main__":
 
     while True:
         c.client.loop()
-        c.client.publish(c.heartbeat_topic, f"falmebeat")
+        c.client.publish(c.heartbeat_topic, f"beat")
 
         ready = select.select([c.client._sock],[],[],c.heartbeat_interval)
         if ready[0]:
