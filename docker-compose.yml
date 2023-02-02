@@ -7,13 +7,13 @@ services:
     ports:
       - "1883:1883"
       - "8883:8883"
-    deploy:
-      limits:
-        cpus: '0.3'
-        memory: 500M
-      reservartions:
-        cpus: '0.01'
-        memory: 200M
+  #   deploy:
+  #     limits:
+  #       cpus: '0.3'
+  #       memory: 500M
+  #     reservartions:
+  #       cpus: '0.01'
+  #       memory: 200M
   
   neo4j:
     image: neo4j
@@ -25,31 +25,31 @@ services:
       - neo:/data
     environment:
       - NEO4J_AUTH=neo4j/test1234
-    deploy:
-      limits:
-        cpus: '0.3'
-        memory: 500M
-      reservartions:
-        cpus: '0.01'
-        memory: 200M
+    # deploy:
+    #   limits:
+    #     cpus: '0.3'
+    #     memory: 500M
+    #   reservartions:
+    #     cpus: '0.01'
+    #     memory: 200M
 
-  server:
-    image: actor-server
-    build: 
-      context: ActorBackend
-      dockerfile: ./ActorBackend/Dockerfile
-    ports:
-      - "4545:4545"
-    depends_on:
-      - mqtt
-      - neo4j
-    deploy:
-      limits:
-        cpus: '0.3'
-        memory: 500M
-      reservartions:
-        cpus: '0.01'
-        memory: 200M
+  # server:
+  #   image: actor-server
+  #   build: 
+  #     context: ActorBackend
+  #     dockerfile: ./ActorBackend/Dockerfile
+  #   ports:
+  #     - "4545:4545"
+  #   depends_on:
+  #     - mqtt
+  #     - neo4j
+  #   deploy:
+  #     limits:
+  #       cpus: '0.3'
+  #       memory: 500M
+  #     reservartions:
+  #       cpus: '0.01'
+  #       memory: 200M
 
 
 volumes:

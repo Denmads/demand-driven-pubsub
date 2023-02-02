@@ -4,17 +4,36 @@ option csharp_namespace = "ActorBackend.Actors";
 
 message ClientConnectInfo {
 	string client_id = 1;
+	int32 connection_timeout = 2;
+}
+
+message Neo4jQuery {
+	oneof query_type {
+		PublishQueryInfo publish_info = 8;
+		SubscribeQueryInfo subscribe_info = 9;
+	}
 }
 
 message PublishQueryInfo {
 	string client_actor_identity = 1;
-	string cypher_script = 2;
-	string stream_node = 3;
-	string data_type = 4;
+	int32  request_id = 2;
+	string cypher_query = 3;
+	string stream_node = 4;
+	string data_type = 5;
 }
 
 message SubscribeQueryInfo {
 	string client_actor_identity = 1;
-	string cypher_script = 2;
-	string input_nodes = 3;
+	int32  request_id = 2;
+	string cypher_query = 3;
+	repeated string target_nodes = 4;
+}
+
+message TopicResponse {
+	string topic = 1;
+	int32 request_id = 2;
+}
+
+message QueryResolvedResponse {
+	string query_actor_identity = 1;
 }

@@ -39,8 +39,7 @@ namespace ActorBackend
 
         private void CreateSubscriptions()
         {
-            //var heart = new HeartbeatSubcription(config, loggerFactory.CreateLogger<ConnectionSubcription>(), actorSystem, mqttClient);
-            //subscriptions.Add(heart.Topic, heart);
+
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -80,7 +79,7 @@ namespace ActorBackend
                 .WithClientId("DDPS")
                 .WithTcpServer(
                     config.MQTT.Host ?? "localhost",
-                    int.Parse(config.MQTT.Port ?? "1883")
+                    config.MQTT.Port
                 ).Build();
 
             var response = await mqttClient.ConnectAsync(mqttClientOptions, cancellationToken);

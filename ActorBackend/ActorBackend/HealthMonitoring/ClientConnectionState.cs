@@ -1,5 +1,4 @@
-﻿using ActorBackend.Config;
-using MQTTnet.Client;
+﻿using MQTTnet.Client;
 
 namespace ActorBackend.HealthMonitoring
 {
@@ -13,7 +12,7 @@ namespace ActorBackend.HealthMonitoring
         public State CurrentState { get; private set; }
 
         private IMqttClient mqttClient;
-        private AppConfig config;
+        private int connectionTimeoutSeconds;
         private string clientId;
 
 
@@ -21,11 +20,11 @@ namespace ActorBackend.HealthMonitoring
 
         private DateTime lastResponseTime;
 
-        public ClientConnectionState(IMqttClient mqttClient, AppConfig config, string clientId)
+        public ClientConnectionState(IMqttClient mqttClient, int connectionTimeoutSeconds, string clientId)
         {
             CurrentState = State.Alive;
             this.mqttClient = mqttClient;
-            this.config = config;
+            this.connectionTimeoutSeconds = connectionTimeoutSeconds;
             this.clientId = clientId;
 
             lastResponseTime = DateTime.UtcNow;
@@ -59,7 +58,7 @@ namespace ActorBackend.HealthMonitoring
         {
             var diff = DateTime.UtcNow - lastResponseTime;
 
-            if (diff.TotalSeconds > config.Backend.HealthMonitor.MinimumTimeForDeadClient)
+            if (diff.TotalSeconds > connectionTimeoutSeconds)
             {
                 CurrentState = State.Dead;
             }

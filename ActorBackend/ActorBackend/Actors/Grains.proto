@@ -10,9 +10,15 @@ service ClientManagerGrain {
 
 service ClientGrain {
 	rpc Connect (ClientConnectInfo) returns (google.protobuf.Empty);
+	rpc QueryResult (TopicResponse) returns (google.protobuf.Empty);
 }
 
 service QueryResolverGrain {
+	rpc ResolveQuery (Neo4jQuery) returns (google.protobuf.Empty);
+	rpc QueryResolved (QueryResolvedResponse) returns (google.protobuf.Empty);
+}
+
+service Neo4jQueryGrain {
 	rpc ResolvePublishQuery (PublishQueryInfo) returns (google.protobuf.Empty);
 	rpc ResolveSubscribeQuery (SubscribeQueryInfo) returns (google.protobuf.Empty);
 }

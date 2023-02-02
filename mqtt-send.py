@@ -20,11 +20,15 @@ mes = ""
 while mes != "quit":
     mes = input("Action> ")
     
+    if len(mes) == 0: continue
+    
     tokens = mes.split()
     
     if tokens[0] == "subscribe":
         client.subscribe(tokens[1])
+        print(f"Subscribe to '{tokens[1]}'")
     else:
-        client.publish(tokens[1], tokens[2])
+        client.publish(tokens[1], " ".join(tokens[2:]))
+        print(f"Published '{tokens[2]}'")
 
 client.loop_stop()

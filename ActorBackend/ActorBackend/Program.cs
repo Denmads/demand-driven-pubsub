@@ -1,6 +1,7 @@
 using ActorBackend.Actors;
 using ActorBackend.Config;
 using Microsoft.Extensions.Options;
+using Neo4jClient;
 using Proto;
 using Proto.Cluster;
 
@@ -12,9 +13,20 @@ namespace ActorBackend
         {
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.Configure<AppConfig>(builder.Configuration.GetSection("AppConfig"));
+            builder.Services.AddSingleton(provider =>
+            {
+                var config = provider.GetService<IOptions<AppConfig>>()!.Value;
+
+                var uri = $"http://{config.Neo4j.Host}:{config.Neo4j.Port}";
+
+                var configuration = NeoServerConfiguration.GetConfigurationAsync(new Uri(uri), config.Neo4j.User, config.Neo4j.Password).Result;
+
+                return (IGraphClientFactory)new GraphClientFactory(configuration);
+
+            });
             builder.Services.AddActorSystem();
             builder.Services.AddHostedService<ActorSystemClusterHostedService>();
-            builder.Services.AddHostedService<MqttService>();
+            //builder.Services.AddHostedService<MqttService>();
             var app = builder.Build();
 
             app.MapGet("/", () => "Hello World!");
@@ -28,12 +40,6 @@ namespace ActorBackend
                     () => new ClientManagerGrainActor((context, clusterIdentity) => new ClientManagerGrain(context, config.Value))
                 ),
                 SingletonActorIdentities.CLIENT_MANAGER
-            );
-            system.Root.SpawnNamed(
-                Props.FromProducer(
-                    () => new QueryResolverGrainActor((context, clusterIdentity) => new QueryResolverGrain(context, config.Value))
-                ),
-                SingletonActorIdentities.QUERY_RESOLVER
             );
 
             app.Run();

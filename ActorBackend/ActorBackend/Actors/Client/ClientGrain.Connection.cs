@@ -5,11 +5,12 @@ using MQTTnet.Client;
 using Proto;
 using Proto.Cluster;
 using System.Text;
-using Timer = System.Timers.Timer;
+using Newtonsoft.Json;
+using ActorBackend.Data;
 
-namespace ActorBackend.Actors
+namespace ActorBackend.Actors.Client
 {
-    public class ClientGrain : ClientGrainBase
+    public partial class ClientGrain : ClientGrainBase
     {
 
         private AppConfig config;
@@ -44,21 +45,33 @@ namespace ActorBackend.Actors
                 .WithClientId(Guid.NewGuid().ToString())
                 .WithTcpServer(
                     config.MQTT.Host ?? "localhost",
-                    int.Parse(config.MQTT.Port ?? "1883")
+                    config.MQTT.Port
             ).Build();
 
             mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
 
         }
+
+        public override Task OnStopping()
+        {
+            mqttClient.Dispose();
+
+            return base.OnStopping();
+        }
+
         public override Task Connect(ClientConnectInfo request)
         {
             clientId = request.ClientId;
-            logger = Proto.Log.CreateLogger($"client/{clientId}");
-            connectionState = new ClientConnectionState(mqttClient, config, clientId);
+            logger = Log.CreateLogger($"client/{clientId}");
+            connectionState = new ClientConnectionState(mqttClient, request.ConnectionTimeout, clientId);
+
+            var heartbeat = CalculateHeartbeatIntervalInSeconds(request.ConnectionTimeout);
+
+            var json = new { HeartbeatInterval = heartbeat };
 
             var message = new MqttApplicationMessageBuilder()
                 .WithTopic(MqttTopicHelper.ClientResponse(clientId))
-                .WithPayload(Encoding.ASCII.GetBytes($"ConnectAck;{config.Backend.HealthMonitor.HeartbeatIntervalMilli}"))
+                .WithPayload(Encoding.ASCII.GetBytes($"connect-ack<>{JsonConvert.SerializeObject(json)}"))
                 .Build();
             mqttClient.PublishAsync(message);
 
@@ -68,21 +81,38 @@ namespace ActorBackend.Actors
             return Task.CompletedTask;
         }
 
+        private int CalculateHeartbeatIntervalInSeconds(int connectionTimeout)
+        {
+            return (int)Math.Floor(connectionTimeout / 5d);
+        }
+
         private void SetupMqttSubscribtions()
         {
-            mqttClient.ApplicationMessageReceivedAsync += args =>
-            {
-                if (args.ApplicationMessage.Topic == MqttTopicHelper.ClientQuery(clientId!))
-                {
-                    logger.LogInformation("Received Query");
-                }
-
-
-                return Task.CompletedTask;
-            };
+            mqttClient.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
 
             mqttClient.SubscribeAsync(MqttTopicHelper.ClientQuery(clientId!));
         }
 
+        private async Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs args)
+        {
+            if (args.ApplicationMessage.Topic == MqttTopicHelper.ClientQuery(clientId!))
+            {
+                logger.LogInformation("Received Query");
+
+                var message = args.ApplicationMessage.ConvertPayloadToString(); //Message format | <publish/subscribe>:json
+                if (message != null)
+                {
+
+                    if (message.StartsWith("publish"))
+                    {
+                        await HandlePublishQuery(message.Split("<>")[1]);
+                    }
+                    else if (message.StartsWith("subscribe"))
+                    {
+                        await HandleSubcribeQuery(message.Split("<>")[1]);
+                    }
+                }
+            }
+        }
     }
 }

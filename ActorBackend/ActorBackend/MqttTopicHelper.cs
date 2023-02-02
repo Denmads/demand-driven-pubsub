@@ -13,7 +13,7 @@ namespace ActorBackend
 
         public static string ClientHeartbeat(string clientId)
         {
-            return config.MQTT.TopicPrefix + $"/{clientId}" + config.Backend.HealthMonitor.HeartbeatTopic;
+            return config.MQTT.TopicPrefix + $"/{clientId}/heartbeat";
         }
 
         public static string ClientResponse(string clientId)

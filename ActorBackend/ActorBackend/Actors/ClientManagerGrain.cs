@@ -1,6 +1,8 @@
 ﻿using ActorBackend.Config;
+using ActorBackend.Data;
 using MQTTnet;
 using MQTTnet.Client;
+using Newtonsoft.Json;
 using Proto;
 using Proto.Cluster;
 
@@ -31,7 +33,7 @@ namespace ActorBackend.Actors
                 .WithClientId(Guid.NewGuid().ToString())
                 .WithTcpServer(
                     config.MQTT.Host ?? "localhost",
-                    int.Parse(config.MQTT.Port ?? "1883")
+                    config.MQTT.Port
             ).Build();
 
             mqttClient.ConnectedAsync += args =>
@@ -48,10 +50,12 @@ namespace ActorBackend.Actors
         {
             mqttClient.ApplicationMessageReceivedAsync += async args =>
             {
-                var clientId = args.ApplicationMessage.ConvertPayloadToString();
-                logger.LogInformation($"New Client: {clientId}");
+                var messageTokens = args.ApplicationMessage.ConvertPayloadToString().Split("<>");
+                ConnectMessage message = JsonConvert.DeserializeObject<ConnectMessage>(messageTokens[1])!;
 
-                await Context.Cluster().GetClientGrain(clientId).Connect(new ClientConnectInfo() { ClientId = clientId}, CancellationToken.None);
+                logger.LogInformation($"New Client: {message.ClientId}");
+
+                await Context.Cluster().GetClientGrain(message.ClientId).Connect(new ClientConnectInfo() { ClientId = message.ClientId, ConnectionTimeout = message.ConnectionTimeout}, CancellationToken.None);
             };
             mqttClient.SubscribeAsync(MqttTopicHelper.ClientManagerConnect());
 
