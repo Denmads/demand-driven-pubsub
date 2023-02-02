@@ -1,7 +1,7 @@
 using ActorBackend.Actors;
 using ActorBackend.Config;
 using Microsoft.Extensions.Options;
-using Neo4jClient;
+using Neo4j.Driver;
 using Proto;
 using Proto.Cluster;
 
@@ -17,11 +17,9 @@ namespace ActorBackend
             {
                 var config = provider.GetService<IOptions<AppConfig>>()!.Value;
 
-                var uri = $"http://{config.Neo4j.Host}:{config.Neo4j.Port}";
+                var uri = $"bolt://{config.Neo4j.Host}:{config.Neo4j.Port}";
 
-                var configuration = NeoServerConfiguration.GetConfigurationAsync(new Uri(uri), config.Neo4j.User, config.Neo4j.Password).Result;
-
-                return (IGraphClientFactory)new GraphClientFactory(configuration);
+                return GraphDatabase.Driver(new Uri(uri), AuthTokens.Basic(config.Neo4j.User, config.Neo4j.Password));
 
             });
             builder.Services.AddActorSystem();

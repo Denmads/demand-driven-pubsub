@@ -1,42 +1,76 @@
-﻿using Neo4jClient;
+﻿using ActorBackend.Data;
+using Neo4j.Driver;
 using Proto;
 using Proto.Cluster;
 
 namespace ActorBackend.Actors
 {
+    using SubscribtionQueryResult = List<Dictionary<string, StreamNode>>;
+
     public class Neo4jQueryGrain : Neo4jQueryGrainBase
     {
-        IRawGraphClient neo4jClient;
+        private Neo4j.Driver.ISession neo4jSession;
 
-        public Neo4jQueryGrain(IContext context, IGraphClientFactory graphClientFactory) : base(context)
+        public Neo4jQueryGrain(IContext context, IDriver neo4jDriver) : base(context)
         {
-                neo4jClient = (IRawGraphClient)graphClientFactory.CreateAsync().Result;
-                neo4jClient.ConnectAsync();
+            neo4jSession = neo4jDriver.Session();
         }
 
         public override async Task ResolvePublishQuery(PublishQueryInfo request)
         {
-            var mqttTopic = GenerateMqttTopic();
+            var mqttTopic = MqttTopicHelper.GenerateMqttTopic();
             var modifiedCypher = request.CypherQuery + $" SET {request.StreamNode}.dataType = '{request.DataType}' SET {request.StreamNode}.topic = '{mqttTopic}'";
 
-            var query = new Neo4jClient.Cypher.CypherQuery(modifiedCypher, new Dictionary<string, object>(), Neo4jClient.Cypher.CypherResultMode.Set, "neo4j");
+            neo4jSession.ExecuteWrite<object>(tx =>
+            {
+                tx.Run(modifiedCypher);
+                return null;
+            });
 
-            await neo4jClient.ExecuteCypherAsync(query);
-
-            var result = new TopicResponse { RequestId = request.RequestId, Topic = mqttTopic };
+            var result = new TopicResponse { RequestId = request.RequestId };
+            result.Topics.Add(mqttTopic);
 
             await Context.Cluster().GetClientGrain(request.ClientActorIdentity)
                 .QueryResult(result, CancellationToken.None);
         }
 
-        private string GenerateMqttTopic()
-        {
-            return Guid.NewGuid().ToString();
-        }
+        
 
         public override Task ResolveSubscribeQuery(SubscribeQueryInfo request)
         {
-            throw new NotImplementedException();
+            
+            var modifiedCypher = request.CypherQuery + " RETURN " + String.Join(", ", request.TargetNodes.ToArray());
+
+            var result = neo4jSession.ExecuteRead<SubscribtionQueryResult>(tx =>
+            {
+                var result = tx.Run(modifiedCypher);
+
+                SubscribtionQueryResult res = new SubscribtionQueryResult();
+                foreach (var record in result)
+                {
+                    Dictionary<string, StreamNode> nodes = new Dictionary<string, StreamNode>();
+                    foreach (var node in record.Values)
+                    {
+                        var n = node.Value as INode;
+                        nodes.Add(node.Key, new StreamNode { Topic = n!.Properties["topic"].As<string>(), DataType = n.Properties["dataType"].As<string>() });
+                    }
+                    res.Add(nodes);
+                }
+
+                return res;
+            });
+
+            
+            var logger = Proto.Log.CreateLogger<Neo4jQueryGrain>();
+            result.ForEach(dict =>
+            {
+                foreach (var kvp in dict)
+                {
+                    logger.LogInformation(kvp.ToString());
+                }
+            });
+
+            return Task.CompletedTask;
         }
 
     }

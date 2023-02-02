@@ -25,5 +25,15 @@ namespace ActorBackend
         {
             return config.MQTT.TopicPrefix + $"/{clientId}/query";
         }
+
+
+
+
+
+
+        public static string GenerateMqttTopic()
+        {
+            return Guid.NewGuid().ToString();
+        }
     }
 }

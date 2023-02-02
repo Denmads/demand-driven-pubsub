@@ -2,7 +2,7 @@
 using ActorBackend.Actors.Client;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Options;
-using Neo4jClient;
+using Neo4j.Driver;
 using Proto;
 using Proto.Cluster;
 using Proto.Cluster.Partition;
@@ -20,7 +20,7 @@ namespace ActorBackend.Config
         {
             serviceCollection.AddSingleton(provider => {
                 AppConfig config = provider.GetService<IOptions<AppConfig>>()!.Value;
-                IGraphClientFactory graphClientFactory = provider.GetService<IGraphClientFactory>()!;
+                IDriver driver = provider.GetService<IDriver>()!;
 
                 var actorSystemConfiguration = ActorSystemConfig.Setup();
 
@@ -55,7 +55,7 @@ namespace ActorBackend.Config
                     kind: Neo4jQueryGrainActor.Kind,
                     prop: Props.FromProducer(() =>
                         new Neo4jQueryGrainActor((context, clusterIdentity) =>
-                            new Neo4jQueryGrain(context, graphClientFactory)
+                            new Neo4jQueryGrain(context, driver)
                         ))
                 );
 

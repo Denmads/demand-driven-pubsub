@@ -57,7 +57,7 @@ namespace ActorBackend.Actors.Client
         {
             var json = new {
                 response.RequestId,
-                response.Topic
+                Topic = response.Topics.First()
             };
 
             var queryResponse = $"query-result<>{JsonConvert.SerializeObject(json)}";

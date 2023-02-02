@@ -1,5 +1,4 @@
 ﻿using ActorBackend.Config;
-using Neo4jClient;
 using Proto;
 using Proto.Cluster;
 
