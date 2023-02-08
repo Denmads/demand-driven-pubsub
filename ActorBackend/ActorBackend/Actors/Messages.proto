@@ -9,8 +9,8 @@ message ClientConnectInfo {
 
 message Neo4jQuery {
 	oneof query_type {
-		PublishQueryInfo publish_info = 8;
-		SubscribeQueryInfo subscribe_info = 9;
+		PublishQueryInfo publish_info = 1;
+		SubscribeQueryInfo subscribe_info = 2;
 	}
 }
 
@@ -29,11 +29,39 @@ message SubscribeQueryInfo {
 	repeated string target_nodes = 4;
 }
 
-message TopicResponse {
-	repeated string topics = 1;
-	int32 request_id = 2;
+message PublishQueryResponse {
+	string topic = 1;
+}
+
+message SubscriptionQueryResponse {
+	message DataNode {
+		string topic = 1;
+		string data_type = 2;
+	}
+
+	message DataNodeCollection {
+		map<string, DataNode> nodes = 1;
+	}
+
+	repeated DataNodeCollection node_collections = 1;
+}
+
+message QueryResponse {
+	int32 request_id = 1;
+	oneof query_type {
+		PublishQueryResponse publish_response = 2;
+		SubscriptionQueryResponse subscribe_response = 3;
+	}
 }
 
 message QueryResolvedResponse {
 	string query_actor_identity = 1;
+}
+
+message SubscriptionGrainCreateInfo {
+	string client_id = 1;
+	string client_actor_identity = 2;
+	string subscribtion_id = 3;
+	string subscription_topic = 4;
+	SubscriptionQueryResponse query = 5;
 }

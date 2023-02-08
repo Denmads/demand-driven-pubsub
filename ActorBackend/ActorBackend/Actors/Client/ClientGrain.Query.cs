@@ -31,6 +31,8 @@ namespace ActorBackend.Actors.Client
 
             return Task.CompletedTask;
         }
+
+        private Dictionary<int, string> pendingQueries = new Dictionary<int, string>();
         private Task HandleSubcribeQuery(string message)
         {
             SubscribeQuery query = JsonConvert.DeserializeObject<SubscribeQuery>(message)!;
@@ -46,6 +48,8 @@ namespace ActorBackend.Actors.Client
                 queryInfo.TargetNodes.Add(n);
             });
 
+            pendingQueries.Add(query.RequestId, query.SubscribtionId);
+
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             queryResolver.ResolveQuery(new Neo4jQuery { SubscribeInfo = queryInfo }, CancellationToken.None);
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -53,11 +57,11 @@ namespace ActorBackend.Actors.Client
             return Task.CompletedTask;
         }
 
-        private MqttApplicationMessage CreateQueryResponseMessage(TopicResponse response)
+        private MqttApplicationMessage CreateQueryResponseMessage(QueryResponse response, string topic)
         {
             var json = new {
                 response.RequestId,
-                Topic = response.Topics.First()
+                Topic = topic
             };
 
             var queryResponse = $"query-result<>{JsonConvert.SerializeObject(json)}";
@@ -69,12 +73,32 @@ namespace ActorBackend.Actors.Client
             return applicationMessage;
         }
 
-        public override Task QueryResult(TopicResponse request)
+        public override Task QueryResult(QueryResponse request)
         {
-            MqttApplicationMessage applicationMessage = CreateQueryResponseMessage(request);
+            string subscribeTopic = MqttTopicHelper.GenerateMqttTopic();
+            if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.PublishResponse)
+            {
+                HandlePublishResponse(request.PublishResponse);
+            }
+            else if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.SubscribeResponse)
+            {
+                HandleSubscribeResponse(request.SubscribeResponse, subscribeTopic);
+            }
+
+            MqttApplicationMessage applicationMessage = CreateQueryResponseMessage(request, subscribeTopic);
             mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
 
             return Task.CompletedTask;
+        }
+
+        private void HandlePublishResponse(PublishQueryResponse response)
+        {
+
+        }
+
+        private void HandleSubscribeResponse(SubscriptionQueryResponse response, string topic)
+        {
+
         }
     }
 }

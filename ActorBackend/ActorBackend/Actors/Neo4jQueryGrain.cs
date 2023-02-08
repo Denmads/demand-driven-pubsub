@@ -27,16 +27,17 @@ namespace ActorBackend.Actors
                 return null;
             });
 
-            var result = new TopicResponse { RequestId = request.RequestId };
-            result.Topics.Add(mqttTopic);
-
+            var result = new PublishQueryResponse { Topic = mqttTopic };
+            
             await Context.Cluster().GetClientGrain(request.ClientActorIdentity)
-                .QueryResult(result, CancellationToken.None);
+                .QueryResult(new QueryResponse { RequestId = request.RequestId, PublishResponse = result}, CancellationToken.None);
+            await Context.Cluster().GetQueryResolverGrain(SingletonActorIdentities.QUERY_RESOLVER)
+                .QueryResolved(new QueryResolvedResponse { QueryActorIdentity = Context.ClusterIdentity()!.Identity }, CancellationToken.None);
         }
 
         
 
-        public override Task ResolveSubscribeQuery(SubscribeQueryInfo request)
+        public override async Task ResolveSubscribeQuery(SubscribeQueryInfo request)
         {
             
             var modifiedCypher = request.CypherQuery + " RETURN " + String.Join(", ", request.TargetNodes.ToArray());
@@ -60,17 +61,32 @@ namespace ActorBackend.Actors
                 return res;
             });
 
-            
-            var logger = Proto.Log.CreateLogger<Neo4jQueryGrain>();
+            var queryResult = new SubscriptionQueryResponse();
             result.ForEach(dict =>
             {
-                foreach (var kvp in dict)
+                var collection = new SubscriptionQueryResponse.Types.DataNodeCollection();
+                foreach (var node in dict)
                 {
-                    logger.LogInformation(kvp.ToString());
+                    collection.Nodes.Add(node.Key, new SubscriptionQueryResponse.Types.DataNode { Topic = node.Value.Topic, DataType = node.Value.DataType });
                 }
+
+                queryResult.NodeCollections.Add(collection);
             });
 
-            return Task.CompletedTask;
+
+            await Context.Cluster().GetClientGrain(request.ClientActorIdentity)
+                .QueryResult(new QueryResponse { RequestId = request.RequestId, SubscribeResponse = queryResult}, CancellationToken.None);
+            await Context.Cluster().GetQueryResolverGrain(SingletonActorIdentities.QUERY_RESOLVER)
+                .QueryResolved(new QueryResolvedResponse { QueryActorIdentity = Context.ClusterIdentity()!.Identity }, CancellationToken.None);
+
+            //var logger = Proto.Log.CreateLogger<Neo4jQueryGrain>();
+            //result.ForEach(dict =>
+            //{
+            //    foreach (var kvp in dict)
+            //    {
+            //        logger.LogInformation(kvp.ToString());
+            //    }
+            //});
         }
 
     }
