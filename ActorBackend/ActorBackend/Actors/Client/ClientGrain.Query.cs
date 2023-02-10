@@ -7,6 +7,7 @@ using Proto.Cluster;
 using System.Text;
 using Newtonsoft.Json;
 using ActorBackend.Data;
+using ActorBackend.Utils;
 
 namespace ActorBackend.Actors.Client
 {
@@ -69,6 +70,7 @@ namespace ActorBackend.Actors.Client
             var applicationMessage = new MqttApplicationMessageBuilder()
                 .WithTopic(MqttTopicHelper.ClientResponse(clientId!))
                 .WithPayload(queryResponse)
+                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
                 .Build();
             return applicationMessage;
         }
@@ -82,7 +84,7 @@ namespace ActorBackend.Actors.Client
             }
             else if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.SubscribeResponse)
             {
-                HandleSubscribeResponse(request.SubscribeResponse, subscribeTopic);
+                HandleSubscribeResponse(request, subscribeTopic);
             }
 
             MqttApplicationMessage applicationMessage = CreateQueryResponseMessage(request, subscribeTopic);
@@ -96,9 +98,21 @@ namespace ActorBackend.Actors.Client
 
         }
 
-        private void HandleSubscribeResponse(SubscriptionQueryResponse response, string topic)
+        private void HandleSubscribeResponse(QueryResponse response, string topic)
         {
+            var subId = pendingQueries.GetValueOrDefault(response.RequestId, "");
+            if (subId == null)
+            {
+                //What to do
+            }
 
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+            Context.Cluster().GetSubscribtionGrain(subId!).Create(
+                new SubscriptionGrainCreateInfo { ClientActorIdentity = Context.ClusterIdentity()!.Identity,
+                                                  ClientId = clientId, SubscribtionId = subId, SubscriptionTopic = topic, Query = response.SubscribeResponse},
+                CancellationToken.None
+            );
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
         }
     }
 }

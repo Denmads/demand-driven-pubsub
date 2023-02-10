@@ -1,4 +1,5 @@
 ﻿using ActorBackend.Config;
+using ActorBackend.Utils;
 using Google.Protobuf.WellKnownTypes;
 using MQTTnet;
 using MQTTnet.Client;
@@ -17,6 +18,8 @@ namespace ActorBackend.Actors
         private string clientActorIdentity;
         private string subscribtionId;
 
+        private List<DataSet> dataSets = new List<DataSet>();
+
         public SubscribtionGrain(IContext context, AppConfig config) : base(context)
         {
             this.config = config;
@@ -28,39 +31,24 @@ namespace ActorBackend.Actors
             clientActorIdentity = request.ClientActorIdentity;
             subscribtionId = request.SubscribtionId;
 
-            MqttFactory factory = new MqttFactory();
-            mqttClient = factory.CreateMqttClient();
-
-            var mqttClientOptions = factory.CreateClientOptionsBuilder()
-                .WithCleanSession()
-                .WithClientId(Guid.NewGuid().ToString())
-                .WithTcpServer(
-                    config.MQTT.Host ?? "localhost",
-                    config.MQTT.Port
-            ).Build();
-
-            mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
+            mqttClient = MqttUtil.CreateConnectedClient(Guid.NewGuid().ToString());
 
             foreach (var dataNodeCollection in request.Query.NodeCollections)
             {
-                SetupCollection(request.Query);
+                SetupCollection(request.Query, request.SubscribtionId);
             }
 
 
             return Task.CompletedTask;
         }
 
-        private void SetupCollection(SubscriptionQueryResponse response)
+        private void SetupCollection(SubscriptionQueryResponse response, string topic)
         {
 
-            mqttClient.ApplicationMessageReceivedAsync += args =>
+            foreach (var collection in response.NodeCollections)
             {
-
-
-                return Task.CompletedTask;
-            };
-
-            
+                dataSets.Add(new DataSet(collection, mqttClient, topic, subscribtionId));
+            }
         }
     }
 

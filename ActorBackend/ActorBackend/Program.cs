@@ -1,5 +1,6 @@
 using ActorBackend.Actors;
 using ActorBackend.Config;
+using ActorBackend.Utils;
 using Microsoft.Extensions.Options;
 using Neo4j.Driver;
 using Proto;
@@ -30,7 +31,7 @@ namespace ActorBackend
             app.MapGet("/", () => "Hello World!");
 
             var config = app.Services.GetRequiredService<IOptions<AppConfig>>();
-            MqttTopicHelper.config = config.Value;
+            MqttUtil.Initialize(config.Value);
 
             var system = app.Services.GetRequiredService<ActorSystem>();
             system.Root.SpawnNamed(

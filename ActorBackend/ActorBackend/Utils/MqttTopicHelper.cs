@@ -1,6 +1,6 @@
 ﻿using ActorBackend.Config;
 
-namespace ActorBackend
+namespace ActorBackend.Utils
 {
     public static class MqttTopicHelper
     {

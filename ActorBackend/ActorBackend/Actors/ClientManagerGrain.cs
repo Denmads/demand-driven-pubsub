@@ -1,5 +1,6 @@
 ﻿using ActorBackend.Config;
 using ActorBackend.Data;
+using ActorBackend.Utils;
 using MQTTnet;
 using MQTTnet.Client;
 using Newtonsoft.Json;
@@ -20,31 +21,13 @@ namespace ActorBackend.Actors
             this.config = config;
             logger = Proto.Log.CreateLogger<ClientManagerGrain>();
 
-            CreateAndConnectMqttClient();
-        }
-
-        private async void CreateAndConnectMqttClient()
-        {
-            MqttFactory factory = new MqttFactory();
-            mqttClient = factory.CreateMqttClient();
-
-            var mqttClientOptions = factory.CreateClientOptionsBuilder()
-                .WithCleanSession()
-                .WithClientId(Guid.NewGuid().ToString())
-                .WithTcpServer(
-                    config.MQTT.Host ?? "localhost",
-                    config.MQTT.Port
-            ).Build();
-
+            mqttClient = MqttUtil.CreateConnectedClient(Guid.NewGuid().ToString());
             mqttClient.ConnectedAsync += args =>
             {
                 SubsbribeToNewConnections();
 
                 return Task.CompletedTask;
             };
-            
-            await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
-
         }
         private void SubsbribeToNewConnections()
         {

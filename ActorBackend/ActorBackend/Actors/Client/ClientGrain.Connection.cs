@@ -7,6 +7,7 @@ using Proto.Cluster;
 using System.Text;
 using Newtonsoft.Json;
 using ActorBackend.Data;
+using ActorBackend.Utils;
 
 namespace ActorBackend.Actors.Client
 {
@@ -32,24 +33,7 @@ namespace ActorBackend.Actors.Client
 
             queryResolver = context.Cluster().GetQueryResolverGrain(SingletonActorIdentities.QUERY_RESOLVER);
 
-            CreateAndConnectMqttClient();
-        }
-
-        private void CreateAndConnectMqttClient()
-        {
-            MqttFactory factory = new MqttFactory();
-            mqttClient = factory.CreateMqttClient();
-
-            var mqttClientOptions = factory.CreateClientOptionsBuilder()
-                .WithCleanSession()
-                .WithClientId(Guid.NewGuid().ToString())
-                .WithTcpServer(
-                    config.MQTT.Host ?? "localhost",
-                    config.MQTT.Port
-            ).Build();
-
-            mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
-
+            mqttClient = MqttUtil.CreateConnectedClient(Guid.NewGuid().ToString());
         }
 
         public override Task OnStopping()

@@ -1,4 +1,5 @@
-﻿using MQTTnet.Client;
+﻿using ActorBackend.Utils;
+using MQTTnet.Client;
 
 namespace ActorBackend.HealthMonitoring
 {
