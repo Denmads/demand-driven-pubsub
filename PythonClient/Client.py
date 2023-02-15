@@ -96,7 +96,6 @@ class Client:
         #    if msg.topic == subTopic:
         #        self.handleDataReturn(payload)
 
-
     def on_connect(self, client, userdata, flags, rc):
         print("Connected with result code "+str(rc))
         client.subscribe("income")  
@@ -139,6 +138,12 @@ class Client:
                 self.client.loop() # handle incoming messages
             else:
                 pass
+
+    def publishData(self, data, topic):
+        if self.publish_topic.__contains__(topic):
+            self.client.publish(topic, payload=data)
+        else:
+            return "not a publish topic"
 
     async def start_heartbeat(self):
         while True:
