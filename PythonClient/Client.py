@@ -23,6 +23,9 @@ class Client:
         self.subscriptionId = {}
         self.subscriptionIdCount = 0
 
+        self.requestToPublishid = {}
+        self.publishIds = {}
+
         self.request_id = 0 # goes up when sending a message on query_topic 
         self.requests = {}
 
@@ -62,6 +65,8 @@ class Client:
             request_id = j["RequestId"]
             requestType = self.requests[(request_id,)]
             if requestType == "publish":
+                publishId = self.requestToPublishid[(request_id,)]
+                self.publishIds[publishId] = topic
                 self.add_publish_topic(topic)
             elif requestType == "subscribe":
                 self.add_subscirbe_topic(topic)
@@ -112,8 +117,9 @@ class Client:
     def give_cypher(self, cypher):
         self.cypher = cypher
 
-    def send_pub_query(self):
+    def send_pub_query(self, publishId):
         self.requests[(self.request_id, )] = "publish"
+        self.requestToPublishid[(self.request_id, )] = publishId
         query = """publish<>{{"RequestId": "{0}", "CypherQuery": "{1}", "TargetNode": {2}, "DataType": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, self.data_type)
         self.request_id += 1
         self.client.publish(self.query_topicc, query)
@@ -139,7 +145,8 @@ class Client:
             else:
                 pass
 
-    def publishData(self, data, topic):
+    def publishData(self, data, publishId):
+        topic = self.publishIds[publishId]
         if self.publish_topic.__contains__(topic):
             self.client.publish(topic, payload=data)
         else:
