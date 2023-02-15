@@ -20,6 +20,9 @@ class Client:
         self.heartbeat_topic = f"ddps/system/{self.id}/heartbeat"
         self.heartbeat_interval = 10
 
+        self.data_topic = f"ddps/system/{self.Id}/data"
+        self.subscriptionId
+
         self.request_id = 0 # goes up when sending a message on query_topic 
         self.cypher = ""
         self.target_node = []
@@ -39,10 +42,15 @@ class Client:
         self.client.publish(self.connect_topic, self.id)
 
     def handleResponse(self, response):
+        response_type = response.split("<>")[0]
         jsonResponse = response.split("<>")[1]
         j = json.loads(jsonResponse)
-        heartbeatInterval = j["HeartbeatInterval"]
-        return heartbeatInterval
+        if response_type == "query-result":
+            topic = j["topic"]
+
+        elif response_type == "connect-ack":
+            heartbeatInterval = j["HeartbeatInterval"]
+            return heartbeatInterval
 
     def on_message(self, client, userdata, msg):
         payload = msg.payload.decode('utf-8')
@@ -65,8 +73,14 @@ class Client:
     def give_cypher(self, cypher):
         self.cypher = cypher
 
-    def send_query(self):
+    def send_pub_query(self):
         query = """publish<>{{"RequestId": "{0}", "CypherQuery": "{1}", "TargetNode": {2}, "DataType": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, self.data_type)
+        self.request_id += 1
+        self.client.publish(self.query_topicc, query)
+        return query
+
+    def send_sub_query(self):
+        query = """publish<>{{"RequestId": "{0}", "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, self.subscriptionId)
         self.request_id += 1
         self.client.publish(self.query_topicc, query)
         return query

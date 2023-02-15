@@ -1,0 +1,13 @@
+test:
+  temperatureSensor:
+    location:
+      room: "O32-602b-2"
+      floor-name: "ground"
+      floor: "0"
+      building: "OU44"
+    type: 
+      sensor: 
+       type: "temperature"
+        publish: True
+        type: "int"
+
