@@ -54,10 +54,15 @@ namespace ActorBackend.Actors.Client
                 clientId = request.ClientId;
                 logger = Log.CreateLogger($"client/{clientId}");
                 connectionState = new ClientConnectionState(mqttClient, request.ConnectionTimeout, clientId);
+                logger.LogInformation("Connecting client");
 
                 heartbeatInterval = CalculateHeartbeatIntervalInSeconds(request.ConnectionTimeout);
 
                 SetupMqttSubscribtions();
+            }
+            else
+            {
+                logger.LogInformation("Reconnecting client");
             }
 
             var json = new { HeartbeatInterval = heartbeatInterval };

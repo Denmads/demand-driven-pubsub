@@ -57,6 +57,13 @@ namespace ActorBackend.Config
                         new Neo4jQueryGrainActor((context, clusterIdentity) =>
                             new Neo4jQueryGrain(context, driver)
                         ))
+                )
+                .WithClusterKind(
+                    kind: SubscribtionGrainActor.Kind,
+                    prop: Props.FromProducer(() =>
+                        new SubscribtionGrainActor((context, clusterIdentity) =>
+                            new SubscribtionGrain(context, config)
+                        ))
                 );
 
 

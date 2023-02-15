@@ -1,4 +1,4 @@
-import asyncio
+import threading
 import paho.mqtt.client as mqtt
 import time
 import select
@@ -34,11 +34,15 @@ class Client:
         self.data_type = "int"
         self.return_value = ""
 
+        self.connected: bool = False
+
         self.client = mqtt.Client()
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         
-        asyncio.create_task(self.start_loop())
+        # t = threading.Thread(target=self.start_loop)
+        # t.setDaemon(True)
+        # t.start()
 
     def print(self):
         print(self.heartbeat_topic)
@@ -55,6 +59,7 @@ class Client:
 
     def connect_to_broker(self):
         self.client.connect(self.broker, self.port, 60)
+        self.client.loop_start()
 
         self.client.publish(self.connect_topic, "connect<>" + json.dumps({"ClientId": self.id, "ConnectionTimeout": self.connectionTimeout}))
 
@@ -63,7 +68,7 @@ class Client:
         jsonResponse = response.split("<>")[1]
         j = json.loads(jsonResponse)
         if response_type == "query-result":
-            topic = j["topic"]
+            topic = j["Topic"]
             request_id = j["RequestId"]
             requestType = self.requests[(request_id,)]
             if requestType == "publish":
@@ -75,7 +80,10 @@ class Client:
 
         elif response_type == "connect-ack":
             self.heartbeatInterval = j["HeartbeatInterval"]
-            asyncio.create_task(self.start_heartbeat())
+            # t = threading.Thread(target=self.start_heartbeat)
+            # t.setDaemon(True)
+            # t.start()
+            self.connected = True
 
     def handleDataReturn(self, payload):
         jsonResponse = payload.split("<>")[1]
@@ -106,7 +114,6 @@ class Client:
         print("Connected with result code "+str(rc))
         client.subscribe("income")  
         client.subscribe(self.response_topic)
-        client.subscribe(self.data_topic)
 
     def add_publish_topic(self, topic):
         self.publish_topic.append(topic)
@@ -121,7 +128,7 @@ class Client:
     def send_pub_query(self, publishId):
         self.requests[(self.request_id, )] = "publish"
         self.requestToPublishid[(self.request_id, )] = publishId
-        query = """publish<>{{"RequestId": "{0}", "CypherQuery": "{1}", "TargetNode": "{2}", "DataType": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, self.data_type)
+        query = """publish<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNode": "{2}", "DataType": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, self.data_type)
         self.request_id += 1
         self.client.publish(self.query_topicc, query)
         return query
@@ -129,7 +136,8 @@ class Client:
     def send_sub_query(self, callback):
         self.requests[(self.request_id, )] = "subscribe"
         self.subscriptionId[(self.subscriptionIdCount, )] = callback
-        query = """subscribe<>{{"RequestId": "{0}", "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, self.subscriptionIdCount)
+        query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, self.subscriptionIdCount)
+        print(query)
         self.request_id += 1
         self.subscriptionIdCount += 1
         self.client.publish(self.query_topicc, query)
@@ -153,15 +161,16 @@ class Client:
         else:
             return "not a publish topic"
 
-    async def start_heartbeat(self):
+    def start_heartbeat(self):
         while True:
             self.client.publish(self.heartbeat_topic, f"beat")
-            await asyncio.sleep(self.heartbeat_interval)
+            time.sleep(self.heartbeat_interval)
            
-    async def start_loop(self):
+    def start_loop(self):
         while True:
+            print("loop")
             self.client.loop()
-            await asyncio.sleep(1)
+            time.sleep(1)
 
 if __name__ =="__main__":
     c = Client("temp4")

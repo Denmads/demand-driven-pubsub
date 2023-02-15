@@ -49,7 +49,7 @@ namespace ActorBackend.Actors.Client
                 queryInfo.TargetNodes.Add(n);
             });
 
-            pendingQueries.Add(query.RequestId, query.SubscribtionId);
+            pendingQueries.Add(query.RequestId, query.SubscriptionId);
 
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             queryResolver.ResolveQuery(new Neo4jQuery { SubscribeInfo = queryInfo }, CancellationToken.None);
@@ -77,17 +77,19 @@ namespace ActorBackend.Actors.Client
 
         public override Task QueryResult(QueryResponse request)
         {
-            string subscribeTopic = MqttTopicHelper.GenerateMqttTopic();
+            MqttApplicationMessage applicationMessage = null;
             if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.PublishResponse)
             {
                 HandlePublishResponse(request.PublishResponse);
+                applicationMessage = CreateQueryResponseMessage(request, request.PublishResponse.Topic);
             }
             else if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.SubscribeResponse)
             {
+                string subscribeTopic = MqttTopicHelper.GenerateMqttTopic();
                 HandleSubscribeResponse(request, subscribeTopic);
+                applicationMessage = CreateQueryResponseMessage(request, subscribeTopic);
             }
 
-            MqttApplicationMessage applicationMessage = CreateQueryResponseMessage(request, subscribeTopic);
             mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
 
             return Task.CompletedTask;
