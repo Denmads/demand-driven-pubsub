@@ -37,6 +37,8 @@ class Client:
         self.client = mqtt.Client()
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
+        
+        asyncio.create_task(self.start_loop())
 
     def print(self):
         print(self.heartbeat_topic)
@@ -54,7 +56,7 @@ class Client:
     def connect_to_broker(self):
         self.client.connect(self.broker, self.port, 60)
 
-        self.client.publish(self.connect_topic, self.id)
+        self.client.publish(self.connect_topic, "connect<>" + json.dumps({"ClientId": self.id, "ConnectionTimeout": self.connectionTimeout}))
 
     def handleResponse(self, response):
         response_type = response.split("<>")[0]
@@ -72,11 +74,11 @@ class Client:
                 self.add_subscirbe_topic(topic)
 
         elif response_type == "connect-ack":
-            heartbeatInterval = j["HeartbeatInterval"]
-            return heartbeatInterval
+            self.heartbeatInterval = j["HeartbeatInterval"]
+            asyncio.create_task(self.start_heartbeat())
 
     def handleDataReturn(self, payload):
-        jsonResponse = response.split("<>")[1]
+        jsonResponse = payload.split("<>")[1]
         j = json.loads(jsonResponse)
         subscriptionId = j["subscriptionId"]
         data =  j["Data"]
@@ -88,11 +90,10 @@ class Client:
         callback(returnObject)
 
     def on_message(self, client, userdata, msg):
-        payload = msg.payload.decode('utf-8')
+        payload: str = msg.payload.decode('utf-8')
         print(f'Received message on topic {msg.topic}: {payload}')
         if msg.topic == self.response_topic:
-            heartbeatInterval = self.handleResponse(payload)
-            self.heartbeat_interval = heartbeatInterval
+            self.handleResponse(payload)
         
         else:
             self.handleDataReturn(payload)
@@ -120,7 +121,7 @@ class Client:
     def send_pub_query(self, publishId):
         self.requests[(self.request_id, )] = "publish"
         self.requestToPublishid[(self.request_id, )] = publishId
-        query = """publish<>{{"RequestId": "{0}", "CypherQuery": "{1}", "TargetNode": {2}, "DataType": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, self.data_type)
+        query = """publish<>{{"RequestId": "{0}", "CypherQuery": "{1}", "TargetNode": "{2}", "DataType": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, self.data_type)
         self.request_id += 1
         self.client.publish(self.query_topicc, query)
         return query

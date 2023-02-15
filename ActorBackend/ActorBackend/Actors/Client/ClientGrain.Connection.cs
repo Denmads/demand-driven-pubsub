@@ -25,6 +25,9 @@ namespace ActorBackend.Actors.Client
         private ILogger logger;
         private QueryResolverGrainClient queryResolver;
 
+        private bool created = false;
+        private int heartbeatInterval = 0;
+
 
         public ClientGrain(IContext context, ClusterIdentity identity, AppConfig config) : base(context)
         {
@@ -45,21 +48,26 @@ namespace ActorBackend.Actors.Client
 
         public override Task Connect(ClientConnectInfo request)
         {
-            clientId = request.ClientId;
-            logger = Log.CreateLogger($"client/{clientId}");
-            connectionState = new ClientConnectionState(mqttClient, request.ConnectionTimeout, clientId);
+            if (!created)
+            {
+                created = true;
+                clientId = request.ClientId;
+                logger = Log.CreateLogger($"client/{clientId}");
+                connectionState = new ClientConnectionState(mqttClient, request.ConnectionTimeout, clientId);
 
-            var heartbeat = CalculateHeartbeatIntervalInSeconds(request.ConnectionTimeout);
+                heartbeatInterval = CalculateHeartbeatIntervalInSeconds(request.ConnectionTimeout);
 
-            var json = new { HeartbeatInterval = heartbeat };
+                SetupMqttSubscribtions();
+            }
+
+            var json = new { HeartbeatInterval = heartbeatInterval };
 
             var message = new MqttApplicationMessageBuilder()
-                .WithTopic(MqttTopicHelper.ClientResponse(clientId))
+                .WithTopic(MqttTopicHelper.ClientResponse(clientId!))
                 .WithPayload(Encoding.ASCII.GetBytes($"connect-ack<>{JsonConvert.SerializeObject(json)}"))
                 .Build();
             mqttClient.PublishAsync(message);
 
-            SetupMqttSubscribtions();
 
             logger.LogInformation("Client Connected.");
             return Task.CompletedTask;

@@ -33,22 +33,12 @@ namespace ActorBackend.Actors
 
             mqttClient = MqttUtil.CreateConnectedClient(Guid.NewGuid().ToString());
 
-            foreach (var dataNodeCollection in request.Query.NodeCollections)
+            foreach (var collection in request.Query.NodeCollections)
             {
-                SetupCollection(request.Query, request.SubscribtionId);
+                dataSets.Add(new DataSet(collection, mqttClient, request.SubscriptionTopic, subscribtionId));
             }
-
 
             return Task.CompletedTask;
-        }
-
-        private void SetupCollection(SubscriptionQueryResponse response, string topic)
-        {
-
-            foreach (var collection in response.NodeCollections)
-            {
-                dataSets.Add(new DataSet(collection, mqttClient, topic, subscribtionId));
-            }
         }
     }
 
