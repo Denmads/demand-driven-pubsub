@@ -3,26 +3,32 @@ import asyncio
 
 mode = input("What Mode (p/s)? ")
 
-client = Client("publisher1" if mode == "p" else "sub1")
-client.connect_to_broker()
-
-while not client.connected:
-    pass
-
-print("test")
-
 def on_data_received(data):
     print(data)
 
 if mode == "s":
+    client = Client("sub1")
+    client.connect_to_broker()
+
+    while not client.connected:
+        pass
+    
     client.give_cypher("MATCH (s:Sensor {type: 'temperature'})")
     client.target_node = ["s"]
     print("subbed test")
     
     
     client.send_sub_query(on_data_received)
-    client.client.loop_forever()
+    
+    input()
+    
 elif mode == "p":
+    client = Client("publisher1")
+    client.connect_to_broker()
+
+    while not client.connected:
+        pass
+
     client.give_cypher("""
             MERGE (b:Building {name: 'OU44'})
             MERGE (f:Floor {name: 'ground', level: 0})

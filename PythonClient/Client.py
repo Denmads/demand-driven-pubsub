@@ -36,9 +36,10 @@ class Client:
 
         self.connected: bool = False
 
-        self.client = mqtt.Client()
+        self.client = mqtt.Client(self.id)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
+        self.client.loop_start()
         
         # t = threading.Thread(target=self.start_loop)
         # t.setDaemon(True)
@@ -59,7 +60,6 @@ class Client:
 
     def connect_to_broker(self):
         self.client.connect(self.broker, self.port, 60)
-        self.client.loop_start()
 
         self.client.publish(self.connect_topic, "connect<>" + json.dumps({"ClientId": self.id, "ConnectionTimeout": self.connectionTimeout}))
 
@@ -112,7 +112,6 @@ class Client:
 
     def on_connect(self, client, userdata, flags, rc):
         print("Connected with result code "+str(rc))
-        client.subscribe("income")  
         client.subscribe(self.response_topic)
 
     def add_publish_topic(self, topic):
