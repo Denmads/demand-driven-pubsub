@@ -46,11 +46,16 @@ message SubscriptionQueryResponse {
 	repeated DataNodeCollection node_collections = 1;
 }
 
+message ErrorResponse {
+	string message = 1;
+}
+
 message QueryResponse {
 	int32 request_id = 1;
 	oneof query_type {
 		PublishQueryResponse publish_response = 2;
 		SubscriptionQueryResponse subscribe_response = 3;
+		ErrorResponse error_response = 4;
 	}
 }
 

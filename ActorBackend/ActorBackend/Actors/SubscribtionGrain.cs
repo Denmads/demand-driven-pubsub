@@ -25,9 +25,6 @@ namespace ActorBackend.Actors
             this.config = config;
 
             mqttClient = MqttUtil.CreateConnectedClient(Guid.NewGuid().ToString());
-            while (!mqttClient.IsConnected)
-            {
-            }
         }
 
         public override Task Create(SubscriptionGrainCreateInfo request)

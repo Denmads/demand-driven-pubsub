@@ -48,10 +48,9 @@ namespace ActorBackend.Actors.Client
 
         public override Task Connect(ClientConnectInfo request)
         {
-            while (!mqttClient.IsConnected)
-            {
-            }
-
+            string messageType = "connect-ack";
+            //var json;
+            object json;
             if (!created)
             {
                 created = true;
@@ -61,19 +60,28 @@ namespace ActorBackend.Actors.Client
                 logger.LogInformation("Connecting client");
 
                 heartbeatInterval = CalculateHeartbeatIntervalInSeconds(request.ConnectionTimeout);
+                json = new { HeartbeatInterval = heartbeatInterval };
 
                 SetupMqttSubscribtions();
             }
             else
             {
                 logger.LogInformation("Reconnecting client");
+                messageType = "reconnect-ack";
+                var publishList = from p in publishTopics select new { Id=p.Key, Topic=p.Value };
+                var subscribeList = from p in subscribeTopics select new { Id = p.Key, Topic = p.Value };
+                json = new
+                {
+                    HeartbeatInterval = heartbeatInterval,
+                    Publishes = publishList,
+                    Subscriptions = subscribeList
+                };
             }
 
-            var json = new { HeartbeatInterval = heartbeatInterval };
 
             var message = new MqttApplicationMessageBuilder()
                 .WithTopic(MqttTopicHelper.ClientResponse(clientId!))
-                .WithPayload(Encoding.ASCII.GetBytes($"connect-ack<>{JsonConvert.SerializeObject(json)}"))
+                .WithPayload(Encoding.ASCII.GetBytes($"{messageType}<>{JsonConvert.SerializeObject(json)}"))
                 .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
                 .Build();
             mqttClient.PublishAsync(message);

@@ -33,7 +33,8 @@ namespace ActorBackend.Utils
             if (clientId != null)
                 connectOptionsBuilder.WithClientId(clientId);
 
-            client.ConnectAsync(connectOptionsBuilder.Build(), CancellationToken.None);
+            Task.WaitAll(client.ConnectAsync(connectOptionsBuilder.Build(), CancellationToken.None));
+            
 
             return client;
         }
