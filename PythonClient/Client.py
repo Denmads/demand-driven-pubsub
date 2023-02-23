@@ -51,17 +51,27 @@ class Client:
     def parse(self, dataType, message):
         if dataType == "string":
             return message
-        elif dataType == "int":
-            return int(message)
-        elif dataType == "float":
-            return float(message)
-        elif dataType == "bool":
-            return bool(message)
+        else:
+            if message == "":
+                return None
+            elif dataType == "int":
+                return int(message)
+            elif dataType == "float":
+                return float(message)
+            elif dataType == "bool":
+                return bool(message)
 
     def connect_to_broker(self):
+        print("connecting")
         self.client.connect(self.broker, self.port, 60)
+        
+        while not self.client.is_connected():
+            pass
 
-        self.client.publish(self.connect_topic, "connect<>" + json.dumps({"ClientId": self.id, "ConnectionTimeout": self.connectionTimeout}))
+        print("connected")
+
+        print("publish connection message")
+        self.client.publish(self.connect_topic, "connect<>" + json.dumps({"ClientId": self.id, "ConnectionTimeout": self.connectionTimeout}), qos=1)
 
     def handleResponse(self, response):
         response_type = response.split("<>")[0]
@@ -88,13 +98,13 @@ class Client:
     def handleDataReturn(self, payload):
         jsonResponse = payload.split("<>")[1]
         j = json.loads(jsonResponse)
-        subscriptionId = j["subscriptionId"]
+        subscriptionId = j["SubscriptionId"]
         data =  j["Data"]
         returnObject = {}
         for nodeName,nodeValue in data.items():
             returnObject[nodeName] = self.parse(nodeValue["DataType"], nodeValue["Value"])
 
-        callback = self.subscriptionId[(subscriptionId,)]
+        callback = self.subscriptionId[subscriptionId]
         callback(returnObject)
 
     def on_message(self, client, userdata, msg):
@@ -129,23 +139,23 @@ class Client:
         self.requestToPublishid[(self.request_id, )] = publishId
         query = """publish<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNode": "{2}", "DataType": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, self.data_type)
         self.request_id += 1
-        self.client.publish(self.query_topicc, query)
+        self.client.publish(self.query_topicc, query, qos=1)
         return query
 
     def send_sub_query(self, callback):
         self.requests[(self.request_id, )] = "subscribe"
-        self.subscriptionId[(self.subscriptionIdCount, )] = callback
+        self.subscriptionId[str(self.subscriptionIdCount)] = callback
         query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, self.subscriptionIdCount)
         print(query)
         self.request_id += 1
         self.subscriptionIdCount += 1
-        self.client.publish(self.query_topicc, query)
+        self.client.publish(self.query_topicc, query, qos=1)
         return query
 
     def old_start_heartbeat(self):
         while True:
             self.client.loop()
-            self.client.publish(self.heartbeat_topic, f"falmebeat")
+            self.client.publish(self.heartbeat_topic, f"falmebeat", qos=1)
 
             ready = select.select([self.client._sock],[],[],self.heartbeat_interval)
             if ready[0]:
@@ -162,7 +172,7 @@ class Client:
 
     def start_heartbeat(self):
         while True:
-            self.client.publish(self.heartbeat_topic, f"beat")
+            self.client.publish(self.heartbeat_topic, f"beat", qos=1)
             time.sleep(self.heartbeat_interval)
            
     def start_loop(self):
@@ -178,7 +188,7 @@ if __name__ =="__main__":
 
     while True:
         c.client.loop()
-        c.client.publish(c.heartbeat_topic, f"beat")
+        c.client.publish(c.heartbeat_topic, f"beat", qos=1)
 
         ready = select.select([c.client._sock],[],[],c.heartbeat_interval)
         if ready[0]:

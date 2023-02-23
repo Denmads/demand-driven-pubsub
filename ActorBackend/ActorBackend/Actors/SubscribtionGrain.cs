@@ -23,6 +23,11 @@ namespace ActorBackend.Actors
         public SubscribtionGrain(IContext context, AppConfig config) : base(context)
         {
             this.config = config;
+
+            mqttClient = MqttUtil.CreateConnectedClient(Guid.NewGuid().ToString());
+            while (!mqttClient.IsConnected)
+            {
+            }
         }
 
         public override Task Create(SubscriptionGrainCreateInfo request)
@@ -30,8 +35,7 @@ namespace ActorBackend.Actors
             clientId = request.ClientId;
             clientActorIdentity = request.ClientActorIdentity;
             subscribtionId = request.SubscribtionId;
-
-            mqttClient = MqttUtil.CreateConnectedClient(Guid.NewGuid().ToString());
+            
 
             foreach (var collection in request.Query.NodeCollections)
             {
@@ -75,7 +79,7 @@ namespace ActorBackend.Actors
             {
                 if (args.ApplicationMessage.Topic == dataNode.Value.Topic)
                 {
-                    lastValues.Add(dataNode.Key, value);
+                    lastValues[dataNode.Key] = value;
 
                     SendUpdatedDataSet();
 
@@ -101,6 +105,7 @@ namespace ActorBackend.Actors
             var applicationMessage = new MqttApplicationMessageBuilder()
                 .WithTopic(sendTopic)
                 .WithPayload(queryResponse)
+                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
                 .Build();
             
 

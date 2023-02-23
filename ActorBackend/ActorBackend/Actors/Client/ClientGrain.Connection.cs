@@ -48,6 +48,10 @@ namespace ActorBackend.Actors.Client
 
         public override Task Connect(ClientConnectInfo request)
         {
+            while (!mqttClient.IsConnected)
+            {
+            }
+
             if (!created)
             {
                 created = true;
@@ -70,6 +74,7 @@ namespace ActorBackend.Actors.Client
             var message = new MqttApplicationMessageBuilder()
                 .WithTopic(MqttTopicHelper.ClientResponse(clientId!))
                 .WithPayload(Encoding.ASCII.GetBytes($"connect-ack<>{JsonConvert.SerializeObject(json)}"))
+                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
                 .Build();
             mqttClient.PublishAsync(message);
 
