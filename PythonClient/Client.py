@@ -21,7 +21,6 @@ class Client:
         self.heartbeat_interval = 10
 
         self.subscriptionId = {}
-        self.subscriptionIdCount = 0
 
         self.requestToPublishid = {}
         self.publishIds = {}
@@ -158,13 +157,12 @@ class Client:
         self.client.publish(self.query_topicc, query, qos=1)
         return query
 
-    def send_sub_query(self, callback):
+    def send_sub_query(self, callback, subscribion_id):
         self.requests[(self.request_id, )] = "subscribe"
-        self.subscriptionId[str(self.subscriptionIdCount)] = callback
-        query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, self.subscriptionIdCount)
+        self.subscriptionId[subscribion_id] = callback
+        query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, subscribion_id)
         print(query)
         self.request_id += 1
-        self.subscriptionIdCount += 1
         self.client.publish(self.query_topicc, query, qos=1)
         return query
 

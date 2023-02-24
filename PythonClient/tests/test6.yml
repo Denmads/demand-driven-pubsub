@@ -1,0 +1,48 @@
+clients:
+  temp1:
+    name: "temp1"
+    location:
+      room: "O32-602b-0"
+      floor-name: "ground"
+      floor: "0"
+      building: "OU44"
+    type: "temperature"
+    publish: True
+    type: "int"
+  temp3:
+    name: "temp3"
+    location:
+      room: "O32-604b-0"
+      floor-name: "ground"
+      floor: "0"
+      building: "OU44"
+    type: "temperature"
+    publish: True
+    type: "int"
+  co1:
+    name: "co1"
+    location:
+      room: "O32-602b-0"
+      floor-name: "ground"
+      floor: "0"
+      building: "OU44"
+    type: "CO2"
+    publish: True
+    type: "int"
+  co2:
+    name: "co2"
+    location:
+      room: "O32-603b-0"
+      floor-name: "ground"
+      floor: "0"
+      building: "OU44"
+    type: "CO2"
+    publish: True
+    type: "int"
+  sup:
+    name: "sub1"
+    location:
+      room: True
+    type: ["temperature", "CO2"]
+    function: print
+    

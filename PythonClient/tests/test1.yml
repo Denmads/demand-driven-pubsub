@@ -1,0 +1,17 @@
+clients:
+  temp1:
+    name: "temp1"
+    location:
+      room: "O32-602b-0"
+      floor-name: "ground"
+      floor: "0"
+      building: "OU44"
+    type: "temperature"
+    publish: True
+    type: "int"
+  sup:
+    name: "sub1"
+    location:
+      room: "O32-602b-0"
+    type: "temperature"
+    function: print
