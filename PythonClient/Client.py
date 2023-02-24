@@ -87,7 +87,7 @@ class Client:
                 self.add_publish_topic(topic)
             elif requestType == "subscribe":
                 self.add_subscirbe_topic(topic)
-        elif response_type == "reconnect":
+        elif response_type == "reconnect-ack":
             self.heartbeatInterval = j["HeartbeatInterval"]
             publishes = j["Publishes"]
             subscriptions = j["Subscriptions"]
