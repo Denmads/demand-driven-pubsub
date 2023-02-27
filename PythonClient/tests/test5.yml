@@ -65,4 +65,4 @@ clients:
       room: True
     type: ["temperature", "CO2"]
     function: print
-    
+    publish: False

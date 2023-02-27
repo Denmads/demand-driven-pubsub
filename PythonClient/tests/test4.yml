@@ -35,4 +35,4 @@ clients:
       room: "O32-602b-0"
     type: "temperature"
     function: print
-    
+    publish: False

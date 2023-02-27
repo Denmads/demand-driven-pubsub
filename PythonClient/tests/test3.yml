@@ -33,4 +33,4 @@ clients:
     name: "sub1"
     type: "temperature"
     function: print
-    
+    publish: False
