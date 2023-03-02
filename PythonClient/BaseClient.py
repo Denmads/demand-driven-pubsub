@@ -4,7 +4,7 @@ import time
 import select
 import json
 
-class Client:
+class BaseClient:
     def __init__(self, id, connectionTimeout=60):
         self.id = id
         self.broker = "localhost"
@@ -39,13 +39,6 @@ class Client:
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self.client.loop_start()
-        
-        # t = threading.Thread(target=self.start_loop)
-        # t.setDaemon(True)
-        # t.start()
-
-    def print(self):
-        print(self.heartbeat_topic)
 
     def parse(self, dataType, message):
         if dataType == "string":
@@ -65,12 +58,14 @@ class Client:
         self.client.connect(self.broker, self.port, 60)
         
         while not self.client.is_connected():
+            self.client.loop()
             pass
 
         print("connected")
 
         print("publish connection message")
         self.client.publish(self.connect_topic, "connect<>" + json.dumps({"ClientId": self.id, "ConnectionTimeout": self.connectionTimeout}), qos=1)
+
 
     def handleResponse(self, response):
         response_type = response.split("<>")[0]
@@ -99,6 +94,7 @@ class Client:
                 self.subscriptionId[s.Id] = s.Topic
 
         elif response_type == "connect-ack":
+            print("connect-ack")
             self.heartbeatInterval = j["HeartbeatInterval"]
             # t = threading.Thread(target=self.start_heartbeat)
             # t.setDaemon(True)
@@ -108,7 +104,9 @@ class Client:
         elif response_type == "query-error":
             pass
             print("query response error")
-        
+
+        else:
+            print("else")
 
     def handleDataReturn(self, payload):
         jsonResponse = payload.split("<>")[1]
@@ -130,10 +128,6 @@ class Client:
         
         else:
             self.handleDataReturn(payload)
-
-        #for subTopic in self.subscribe_topics:
-        #    if msg.topic == subTopic:
-        #        self.handleDataReturn(payload)
 
     def on_connect(self, client, userdata, flags, rc):
         print("Connected with result code "+str(rc))
@@ -165,18 +159,7 @@ class Client:
         self.request_id += 1
         self.client.publish(self.query_topicc, query, qos=1)
         return query
-
-    def old_start_heartbeat(self):
-        while True:
-            self.client.loop()
-            self.client.publish(self.heartbeat_topic, f"falmebeat", qos=1)
-
-            ready = select.select([self.client._sock],[],[],self.heartbeat_interval)
-            if ready[0]:
-                self.client.loop() # handle incoming messages
-            else:
-                pass
-
+    
     def publishData(self, data, publishId):
         topic = self.publishIds[publishId]
         if self.publish_topic.__contains__(topic):
@@ -194,20 +177,3 @@ class Client:
             print("loop")
             self.client.loop()
             time.sleep(1)
-
-if __name__ =="__main__":
-    c = Client("temp4")
-    c.print()
-    c.connect_to_broker()
-
-    while True:
-        c.client.loop()
-        c.client.publish(c.heartbeat_topic, f"beat", qos=1)
-
-        ready = select.select([c.client._sock],[],[],c.heartbeat_interval)
-        if ready[0]:
-            c.client.loop() # handle incoming messages
-        else:
-            pass
-
-    
