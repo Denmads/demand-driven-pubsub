@@ -18,7 +18,7 @@ if mode == "s":
     print("subbed test")
     
     
-    client.send_sub_query(on_data_received)
+    client.send_sub_query(on_data_received, "sub1")
     
     input()
     

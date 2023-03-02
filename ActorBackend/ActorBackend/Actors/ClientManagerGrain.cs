@@ -22,12 +22,7 @@ namespace ActorBackend.Actors
             logger = Proto.Log.CreateLogger<ClientManagerGrain>();
 
             mqttClient = MqttUtil.CreateConnectedClient(Guid.NewGuid().ToString());
-            mqttClient.ConnectedAsync += args =>
-            {
-                SubsbribeToNewConnections();
-
-                return Task.CompletedTask;
-            };
+            SubsbribeToNewConnections();
         }
         private void SubsbribeToNewConnections()
         {
