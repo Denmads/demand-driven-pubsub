@@ -11,8 +11,7 @@ clients:
     type: "int"
   sup:
     name: "sub1"
-    location:
-      room: "O32-602b-0"
+    cypher: "MATCH (s:Sensor {type: 'temperature'})"
     type: "temperature"
     function: p
     publish: False

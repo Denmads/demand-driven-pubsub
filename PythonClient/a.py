@@ -1,9 +1,12 @@
-from Client import Client
+from BaseClient import BaseClient
 import threading
 
 class Interface:
-    client = null
-    cypher = ""
+
+    def __init__(self):
+
+        self.client = ""
+        self.cypher = ""
 
     def publish_query(self, cypher, target_node, data_type, publish_id):
         self.client.give_cypher(cypher)
@@ -17,17 +20,16 @@ class Interface:
         self.client.send_sub_query(on_data_received)
 
     def create_client(self, id):
-        self.client = Client(id)
+        self.client = BaseClient(id)
         self.client.connect_to_broker()
 
         while not self.client.connected:
             pass
-
+        
+        print("started")
         thread = threading.Thread(self.client.start_heartbeat())
         thread.daemon = True
         thread.start()
 
     def publish_data(self, data, topic_id):
         self.client.publishData(data, topic_id)
-
-    
