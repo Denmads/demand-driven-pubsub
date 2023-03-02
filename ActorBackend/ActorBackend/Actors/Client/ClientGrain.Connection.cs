@@ -28,7 +28,6 @@ namespace ActorBackend.Actors.Client
         private bool created = false;
         private int heartbeatInterval = 0;
 
-
         public ClientGrain(IContext context, ClusterIdentity identity, AppConfig config) : base(context)
         {
             this.config = config;
@@ -41,6 +40,20 @@ namespace ActorBackend.Actors.Client
 
         public override Task OnStopping()
         {
+            var json = new
+            {
+                Reason="Server Stopped"
+            };
+
+            var queryResponse = $"disconnect<>{JsonConvert.SerializeObject(json)}";
+
+            var applicationMessage = new MqttApplicationMessageBuilder()
+                .WithTopic(MqttTopicHelper.ClientResponse(clientId!))
+                .WithPayload(queryResponse)
+                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                .Build();
+
+            mqttClient.PublishAsync(applicationMessage);
             mqttClient.Dispose();
 
             return base.OnStopping();
