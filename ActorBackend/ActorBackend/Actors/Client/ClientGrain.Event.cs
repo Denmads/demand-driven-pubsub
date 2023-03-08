@@ -89,7 +89,7 @@ namespace ActorBackend.Actors.Client
 
             var json = new
             {
-                SubscribtionId = subId,
+                SubscriptionId = subId,
                 ClientId = request.ClientIdentity
             };
 
