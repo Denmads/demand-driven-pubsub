@@ -36,6 +36,8 @@ namespace ActorBackend.Actors.Client
             queryResolver = context.Cluster().GetQueryResolverGrain(SingletonActorIdentities.QUERY_RESOLVER);
 
             mqttClient = MqttUtil.CreateConnectedClient(Guid.NewGuid().ToString());
+
+            dependencyList = new ClientDependencyList(Context, identity.Identity);
         }
 
         public override Task OnStopping()
@@ -70,6 +72,18 @@ namespace ActorBackend.Actors.Client
                 clientId = request.ClientId;
                 logger = Log.CreateLogger($"client/{clientId}");
                 connectionState = new ClientConnectionState(mqttClient, request.ConnectionTimeout, clientId);
+                connectionState.onConnectionResurrected = () =>
+                {
+                    NotifyDependentsOfStateChange(State.Alive);
+                    dependencyList.NotifyOfAliveConnection();
+                };
+                connectionState.onConnectionDied = () =>
+                {
+                    NotifyDependentsOfStateChange(State.Dead);
+                    dependencyList.NotifyOfDeadConnection();
+                };
+
+
                 logger.LogInformation("Connecting client");
 
                 heartbeatInterval = CalculateHeartbeatIntervalInSeconds(request.ConnectionTimeout);
@@ -81,7 +95,7 @@ namespace ActorBackend.Actors.Client
             {
                 logger.LogInformation("Reconnecting client");
                 messageType = "reconnect-ack";
-                var publishList = from p in publishTopics select new { Id=p.Key, Topic=p.Value };
+                var publishList = from p in publishTopics select new { Id=p.Key, Topic=p.Value.Topic, Active=p.Value.Active };
                 var subscribeList = from p in subscribeTopics select new { Id = p.Key, Topic = p.Value };
                 json = new
                 {
@@ -90,7 +104,6 @@ namespace ActorBackend.Actors.Client
                     Subscriptions = subscribeList
                 };
             }
-
 
             var message = new MqttApplicationMessageBuilder()
                 .WithTopic(MqttTopicHelper.ClientResponse(clientId!))

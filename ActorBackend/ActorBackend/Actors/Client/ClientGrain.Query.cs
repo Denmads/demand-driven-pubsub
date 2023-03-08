@@ -14,8 +14,11 @@ namespace ActorBackend.Actors.Client
     public partial class ClientGrain : ClientGrainBase
     {
         private Dictionary<int, string> pendingQueries = new Dictionary<int, string>();
-        private Dictionary<string, string> publishTopics = new Dictionary<string, string>();
+        private Dictionary<string, string> topicToPubId= new Dictionary<string, string>();
+        private Dictionary<string, PublishInfo> publishTopics = new Dictionary<string, PublishInfo>();
         private Dictionary<string, string> subscribeTopics = new Dictionary<string, string>();
+
+        private ClientDependencyList dependencyList;
 
         private Task HandlePublishQuery(string message)
         {
@@ -123,20 +126,34 @@ namespace ActorBackend.Actors.Client
 
         private void HandlePublishResponse(int requestId, PublishQueryResponse response)
         {
-            publishTopics[pendingQueries[requestId]] = response.Topic;
+            publishTopics[pendingQueries[requestId]] = new PublishInfo{Topic=response.Topic};
+            topicToPubId[response.Topic] = pendingQueries[requestId];
+            dependents[pendingQueries[requestId]] = new Dictionary<string, ClientGrainClient>();
             pendingQueries.Remove(requestId);
         }
 
         private void HandleSubscribeResponse(int requestId, SubscriptionQueryResponse response, string topic)
         {
             var subId = pendingQueries.GetValueOrDefault(requestId, "");
-            if (subId == null)
+            if (subId == "")
             {
                 //What to do
             }
 
-            subscribeTopics[pendingQueries[requestId]] = topic;
+            subscribeTopics[subId] = topic;
             pendingQueries.Remove(requestId);
+
+            foreach (var nodeColl in response.NodeCollections)
+            {
+                foreach (var node in nodeColl.Nodes)
+                {
+                    dependencyList.AddDependency(
+                        node.Value.Topic,
+                        subId,
+                        node.Value.OwningActorIdentity
+                    );
+                }
+            }
 
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             Context.Cluster().GetSubscribtionGrain(subId!).Create(

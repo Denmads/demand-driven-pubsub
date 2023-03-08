@@ -11,6 +11,10 @@ service ClientManagerGrain {
 service ClientGrain {
 	rpc Connect (ClientConnectInfo) returns (google.protobuf.Empty);
 	rpc QueryResult (QueryResponse) returns (google.protobuf.Empty);
+	rpc StartPubDependency(DependencyMessage) returns (google.protobuf.Empty);
+	rpc StopPubDependency(DependencyMessage) returns (google.protobuf.Empty);
+
+	rpc NotifyOfDependencyStateChange(DependencyStateChangeMessage) returns (google.protobuf.Empty);
 }
 
 service QueryResolverGrain {
