@@ -37,6 +37,7 @@ message SubscriptionQueryResponse {
 	message DataNode {
 		string topic = 1;
 		string data_type = 2;
+		string owning_actor_identity = 3;
 	}
 
 	message DataNodeCollection {

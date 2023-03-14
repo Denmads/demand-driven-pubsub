@@ -10,6 +10,10 @@ namespace ActorBackend.HealthMonitoring
             Alive, Dead, Unknown
         }
 
+        public Action? onConnectionDied { get; set; } = null;
+        public Action? onConnectionResurrected { get; set; } = null;
+
+
         public State CurrentState { get; private set; }
 
         private IMqttClient mqttClient;
@@ -47,6 +51,11 @@ namespace ActorBackend.HealthMonitoring
             {
                 if (args.ApplicationMessage.Topic == MqttTopicHelper.ClientHeartbeat(clientId))
                 {
+                    if (CurrentState == State.Dead && onConnectionResurrected != null)
+                    {
+                        onConnectionResurrected();
+                    }
+
                     lastResponseTime = DateTime.UtcNow;
                     CurrentState = State.Alive;
                 }
@@ -62,6 +71,9 @@ namespace ActorBackend.HealthMonitoring
             if (diff.TotalSeconds > connectionTimeoutSeconds)
             {
                 CurrentState = State.Dead;
+
+                if (onConnectionDied != null)
+                    onConnectionDied();
             }
         }
     }
