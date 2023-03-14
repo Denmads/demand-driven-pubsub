@@ -37,7 +37,6 @@ message SubscriptionQueryResponse {
 	message DataNode {
 		string topic = 1;
 		string data_type = 2;
-		string owning_actor_identity = 3;
 	}
 
 	message DataNodeCollection {
@@ -70,24 +69,4 @@ message SubscriptionGrainCreateInfo {
 	string subscribtion_id = 3;
 	string subscription_topic = 4;
 	SubscriptionQueryResponse query = 5;
-}
-
-message DependencyMessage {
-	string client_actor_identity = 1;
-	oneof id_type {
-		string topic = 2;
-		string publish_id = 3;
-	}
-}
-
-enum State {
-	ALIVE = 0;
-	DEAD = 1;
-}
-
-message DependencyStateChangeMessage {
-	string client_identity = 1;
-	string client_actor_identity = 2;
-	string publish_topic = 3;
-	State state = 4;
 }

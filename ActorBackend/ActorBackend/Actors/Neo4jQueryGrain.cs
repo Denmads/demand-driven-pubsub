@@ -22,9 +22,7 @@ namespace ActorBackend.Actors
             try
             {
                 var mqttTopic = MqttTopicHelper.GenerateMqttTopic();
-                var modifiedCypher = request.CypherQuery + $" SET {request.StreamNode}.dataType = '{request.DataType}'";
-                modifiedCypher += $" SET {request.StreamNode}.topic = '{mqttTopic}'";
-                modifiedCypher += $" SET {request.StreamNode}.actor = '{request.ClientActorIdentity}'";
+                var modifiedCypher = request.CypherQuery + $" SET {request.StreamNode}.dataType = '{request.DataType}' SET {request.StreamNode}.topic = '{mqttTopic}'";
 
                 neo4jSession.ExecuteWrite<object>(tx =>
                 {
@@ -69,11 +67,7 @@ namespace ActorBackend.Actors
                         foreach (var node in record.Values)
                         {
                             var n = node.Value as INode;
-                            nodes.Add(node.Key, new StreamNode { 
-                                Topic = n!.Properties["topic"].As<string>(), 
-                                DataType = n.Properties["dataType"].As<string>(),
-                                ClientActorIdentity = n!.Properties["actor"].As<string>()
-                            });
+                            nodes.Add(node.Key, new StreamNode { Topic = n!.Properties["topic"].As<string>(), DataType = n.Properties["dataType"].As<string>() });
                         }
                         res.Add(nodes);
                     }
@@ -87,7 +81,7 @@ namespace ActorBackend.Actors
                     var collection = new SubscriptionQueryResponse.Types.DataNodeCollection();
                     foreach (var node in dict)
                     {
-                        collection.Nodes.Add(node.Key, new SubscriptionQueryResponse.Types.DataNode { Topic = node.Value.Topic, DataType = node.Value.DataType, OwningActorIdentity = node.Value.ClientActorIdentity });
+                        collection.Nodes.Add(node.Key, new SubscriptionQueryResponse.Types.DataNode { Topic = node.Value.Topic, DataType = node.Value.DataType });
                     }
 
                     queryResult.NodeCollections.Add(collection);

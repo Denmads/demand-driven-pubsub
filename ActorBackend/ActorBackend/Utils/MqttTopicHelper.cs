@@ -26,11 +26,6 @@ namespace ActorBackend.Utils
             return config.MQTT.TopicPrefix + $"/{clientId}/query";
         }
 
-        public static string ClientUpdates(string clientId)
-        {
-            return config.MQTT.TopicPrefix + $"/{clientId}/updates";
-        }
-
         public static string GenerateMqttTopic()
         {
             return config.MQTT.TopicPrefix + "/" + Guid.NewGuid().ToString();
