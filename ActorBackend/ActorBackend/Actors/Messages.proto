@@ -74,10 +74,8 @@ message SubscriptionGrainCreateInfo {
 
 message DependencyMessage {
 	string client_actor_identity = 1;
-	oneof id_type {
-		string topic = 2;
-		string publish_id = 3;
-	}
+	string subscription_id = 2;
+	string publish_topic = 3;
 }
 
 enum State {
@@ -85,9 +83,12 @@ enum State {
 	DEAD = 1;
 }
 
-message DependencyStateChangeMessage {
-	string client_identity = 1;
-	string client_actor_identity = 2;
-	string publish_topic = 3;
-	State state = 4;
+message DependencyStateChangedMessage {
+	string client_id = 1;
+	string subscription_id = 2;
+	State state = 3;
+}
+
+message DependentStateChangedMessage {
+	State state = 1;
 }

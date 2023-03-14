@@ -69,10 +69,11 @@ namespace ActorBackend.Actors
                         foreach (var node in record.Values)
                         {
                             var n = node.Value as INode;
-                            nodes.Add(node.Key, new StreamNode { 
-                                Topic = n!.Properties["topic"].As<string>(), 
+                            nodes.Add(node.Key, new StreamNode
+                            {
+                                Topic = n!.Properties["topic"].As<string>(),
                                 DataType = n.Properties["dataType"].As<string>(),
-                                ClientActorIdentity = n!.Properties["actor"].As<string>()
+                                OwningClientActorIdentity = n!.Properties["actor"].As<string>()
                             });
                         }
                         res.Add(nodes);
@@ -87,7 +88,11 @@ namespace ActorBackend.Actors
                     var collection = new SubscriptionQueryResponse.Types.DataNodeCollection();
                     foreach (var node in dict)
                     {
-                        collection.Nodes.Add(node.Key, new SubscriptionQueryResponse.Types.DataNode { Topic = node.Value.Topic, DataType = node.Value.DataType, OwningActorIdentity = node.Value.ClientActorIdentity });
+                        collection.Nodes.Add(node.Key, new SubscriptionQueryResponse.Types.DataNode { 
+                            Topic = node.Value.Topic, 
+                            DataType = node.Value.DataType,
+                            OwningActorIdentity = node.Value.OwningClientActorIdentity
+                        });
                     }
 
                     queryResult.NodeCollections.Add(collection);

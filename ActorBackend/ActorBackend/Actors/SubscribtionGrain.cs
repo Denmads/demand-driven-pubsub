@@ -36,7 +36,20 @@ namespace ActorBackend.Actors
 
             foreach (var collection in request.Query.NodeCollections)
             {
-                dataSets.Add(new DataSet(collection, mqttClient, request.SubscriptionTopic, subscribtionId));
+                var dataset = new DataSet(collection, mqttClient, request.SubscriptionTopic, subscribtionId);
+                dataset.NotifyOfDependentStateChange(clientActorIdentity, true, Context);
+
+                dataSets.Add(dataset);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public override Task NotifyDependenciesOfStateChange(DependentStateChangedMessage request)
+        {
+            foreach (var dataSet in dataSets)
+            {
+                dataSet.NotifyOfDependentStateChange(clientActorIdentity, request.State == State.Alive, Context);
             }
 
             return Task.CompletedTask;
@@ -107,6 +120,23 @@ namespace ActorBackend.Actors
             
 
             mqttClient.PublishAsync(applicationMessage);
+        }
+
+        public void NotifyOfDependentStateChange(string clientActorIdentity, bool alive, IContext context)
+        {
+            var needToNotify = from n in nodeCollection.Nodes 
+                               group n by new { OwningClient = n.Value.OwningActorIdentity, Topic=n.Value.Topic} into g
+                               select new {g.Key.OwningClient, g.Key.Topic};
+
+            foreach (var notifyInfo in needToNotify)
+            {
+                var message = new DependencyMessage { ClientActorIdentity = clientActorIdentity, PublishTopic= notifyInfo.Topic, SubscriptionId = subId};
+
+                if (alive)
+                    context.GetClientGrain(notifyInfo.OwningClient).StartPublishDependency(message, CancellationToken.None);
+                else
+                    context.GetClientGrain(notifyInfo.OwningClient).StopPublishDependency(message, CancellationToken.None);
+            }
         }
 
         class DataNode

@@ -14,11 +14,8 @@ namespace ActorBackend.Actors.Client
     public partial class ClientGrain : ClientGrainBase
     {
         private Dictionary<int, string> pendingQueries = new Dictionary<int, string>();
-        private Dictionary<string, string> topicToPubId= new Dictionary<string, string>();
-        private Dictionary<string, PublishInfo> publishTopics = new Dictionary<string, PublishInfo>();
+        private Dictionary<string, PublishState> publishes = new Dictionary<string, PublishState>();
         private Dictionary<string, string> subscribeTopics = new Dictionary<string, string>();
-
-        private ClientDependencyList dependencyList;
 
         private Task HandlePublishQuery(string message)
         {
@@ -111,8 +108,12 @@ namespace ActorBackend.Actors.Client
             else if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.SubscribeResponse)
             {
                 string subscribeTopic = MqttTopicHelper.GenerateMqttTopic();
-                HandleSubscribeResponse(request.RequestId, request.SubscribeResponse, subscribeTopic);
-                applicationMessage = CreateQueryResponseMessage(request, subscribeTopic);
+                var success = HandleSubscribeResponse(request.RequestId, request.SubscribeResponse, subscribeTopic);
+
+                if (success)
+                    applicationMessage = CreateQueryResponseMessage(request, subscribeTopic);
+                else
+                    applicationMessage = CreateQueryErrorResponseMessage(new ErrorResponse { Message = "An error occurred while trying to execute the subscribe query." });
             }
             else if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.ErrorResponse)
             {
@@ -126,42 +127,30 @@ namespace ActorBackend.Actors.Client
 
         private void HandlePublishResponse(int requestId, PublishQueryResponse response)
         {
-            publishTopics[pendingQueries[requestId]] = new PublishInfo{Topic=response.Topic};
-            topicToPubId[response.Topic] = pendingQueries[requestId];
-            dependents[pendingQueries[requestId]] = new Dictionary<string, ClientGrainClient>();
+            publishes[response.Topic] = new PublishState(clientId!, mqttClient, pendingQueries[requestId], Context);
             pendingQueries.Remove(requestId);
         }
 
-        private void HandleSubscribeResponse(int requestId, SubscriptionQueryResponse response, string topic)
+        private bool HandleSubscribeResponse(int requestId, SubscriptionQueryResponse response, string topic)
         {
             var subId = pendingQueries.GetValueOrDefault(requestId, "");
-            if (subId == "")
+            if (subId == null)
             {
-                //What to do
+                return false;
             }
 
-            subscribeTopics[subId] = topic;
+            subscribeTopics[pendingQueries[requestId]] = topic;
             pendingQueries.Remove(requestId);
 
-            foreach (var nodeColl in response.NodeCollections)
-            {
-                foreach (var node in nodeColl.Nodes)
-                {
-                    dependencyList.AddDependency(
-                        node.Value.Topic,
-                        subId,
-                        node.Value.OwningActorIdentity
-                    );
-                }
-            }
+            string subGrainId = $"{clientId}.{subId}";
 
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            Context.Cluster().GetSubscribtionGrain(subId!).Create(
+            Context.Cluster().GetSubscribtionGrain(subGrainId).Create(
                 new SubscriptionGrainCreateInfo { ClientActorIdentity = Context.ClusterIdentity()!.Identity,
                                                   ClientId = clientId, SubscribtionId = subId, SubscriptionTopic = topic, Query = response},
                 CancellationToken.None
             );
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+
+            return true;
         }
     }
 }

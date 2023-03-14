@@ -13,6 +13,7 @@ namespace ActorBackend.HealthMonitoring
         public Action? onConnectionDied { get; set; } = null;
         public Action? onConnectionResurrected { get; set; } = null;
 
+
         public State CurrentState { get; private set; }
 
         private IMqttClient mqttClient;
