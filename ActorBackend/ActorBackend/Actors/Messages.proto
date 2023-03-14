@@ -71,3 +71,24 @@ message SubscriptionGrainCreateInfo {
 	string subscription_topic = 4;
 	SubscriptionQueryResponse query = 5;
 }
+
+message DependencyMessage {
+	string client_actor_identity = 1;
+	string subscription_id = 2;
+	string publish_topic = 3;
+}
+
+enum State {
+	ALIVE = 0;
+	DEAD = 1;
+}
+
+message DependencyStateChangedMessage {
+	string client_id = 1;
+	string subscription_id = 2;
+	State state = 3;
+}
+
+message DependentStateChangedMessage {
+	State state = 1;
+}

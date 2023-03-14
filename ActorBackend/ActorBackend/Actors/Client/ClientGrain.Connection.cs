@@ -70,6 +70,40 @@ namespace ActorBackend.Actors.Client
                 clientId = request.ClientId;
                 logger = Log.CreateLogger($"client/{clientId}");
                 connectionState = new ClientConnectionState(mqttClient, request.ConnectionTimeout, clientId);
+                connectionState.onConnectionDied = () =>
+                {
+                    //Notify dependents
+                    foreach (var publish in publishes)
+                    {
+                        publish.Value.NotifyOfClientConnectionStateChange(false);
+                    }
+
+                    //Notify dependencies
+                    foreach (var subId in subscribeTopics.Keys)
+                    {
+                        string subGrainId = $"{clientId}.{subId}";
+                        var message = new DependentStateChangedMessage { State = State.Dead };
+                        Context.GetSubscribtionGrain(subGrainId).NotifyDependenciesOfStateChange(message, CancellationToken.None);
+                    }
+                };
+
+                connectionState.onConnectionResurrected = () =>
+                {
+                    //Notify dependents
+                    foreach (var publish in publishes)
+                    {
+                        publish.Value.NotifyOfClientConnectionStateChange(false);
+                    }
+
+                    //Notify dependencies
+                    foreach (var subId in subscribeTopics.Keys)
+                    {
+                        string subGrainId = $"{clientId}.{subId}";
+                        var message = new DependentStateChangedMessage { State = State.Alive };
+                        Context.GetSubscribtionGrain(subGrainId).NotifyDependenciesOfStateChange(message, CancellationToken.None);
+                    }
+                };
+
                 logger.LogInformation("Connecting client");
 
                 heartbeatInterval = CalculateHeartbeatIntervalInSeconds(request.ConnectionTimeout);
@@ -81,7 +115,7 @@ namespace ActorBackend.Actors.Client
             {
                 logger.LogInformation("Reconnecting client");
                 messageType = "reconnect-ack";
-                var publishList = from p in publishTopics select new { Id=p.Key, Topic=p.Value };
+                var publishList = from p in publishes select new { Id=p.Value.PublishId, Topic=p.Key, Active=p.Value.Active };
                 var subscribeList = from p in subscribeTopics select new { Id = p.Key, Topic = p.Value };
                 json = new
                 {

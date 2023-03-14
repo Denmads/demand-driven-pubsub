@@ -11,6 +11,10 @@ service ClientManagerGrain {
 service ClientGrain {
 	rpc Connect (ClientConnectInfo) returns (google.protobuf.Empty);
 	rpc QueryResult (QueryResponse) returns (google.protobuf.Empty);
+
+	rpc StartPublishDependency (DependencyMessage) returns (google.protobuf.Empty);
+	rpc StopPublishDependency (DependencyMessage) returns (google.protobuf.Empty);
+	rpc NotifyOfDependencyStateChanged (DependencyStateChangedMessage) returns (google.protobuf.Empty);
 }
 
 service QueryResolverGrain {
@@ -25,4 +29,6 @@ service Neo4jQueryGrain {
 
 service SubscribtionGrain {
 	rpc Create (SubscriptionGrainCreateInfo) returns (google.protobuf.Empty);
+
+	rpc NotifyDependenciesOfStateChange (DependentStateChangedMessage) returns (google.protobuf.Empty);
 }
