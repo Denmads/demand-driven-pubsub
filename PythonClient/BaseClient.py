@@ -20,6 +20,9 @@ class BaseClient:
         self.heartbeat_topic = f"ddps/system/{self.id}/heartbeat"
         self.heartbeat_interval = 10
 
+        self.update_topic = f"ddps/system/{self.id}/updates"
+        self.should_publish = False
+
         self.subscriptionId = {}
 
         self.requestToPublishid = {}
@@ -53,6 +56,9 @@ class BaseClient:
             elif dataType == "bool":
                 return bool(message)
 
+    def updateTopic(self):
+        pass
+    
     def connect_to_broker(self):
         print("connecting")
         self.client.connect(self.broker, self.port, 60)
@@ -81,6 +87,7 @@ class BaseClient:
                 self.add_publish_topic(topic)
             elif requestType == "subscribe":
                 self.add_subscirbe_topic(topic)
+
         elif response_type == "reconnect-ack":
             self.heartbeatInterval = j["HeartbeatInterval"]
             publishes = j["Publishes"]
@@ -104,6 +111,15 @@ class BaseClient:
         elif response_type == "query-error":
             pass
             print("query response error")
+
+        elif response_type == "publish-state-change":
+            self.should_publish = j["Active"]
+
+        elif response_type == "dependency-died":
+            self.should_publish = False
+
+        elif response_type == "dependency-resurrected":
+            self.should_publish = True
 
         else:
             print("else")
@@ -132,6 +148,7 @@ class BaseClient:
     def on_connect(self, client, userdata, flags, rc):
         print("Connected with result code "+str(rc))
         client.subscribe(self.response_topic)
+        client.subscribe(self.update_topic)
 
     def add_publish_topic(self, topic):
         self.publish_topic.append(topic)
@@ -161,12 +178,15 @@ class BaseClient:
         return query
     
     def publishData(self, data, publishId):
-        topic = self.publishIds[publishId]
-        if self.publish_topic.__contains__(topic):
-            self.client.publish(topic, payload=data)
-        else:
-            return "not a publish topic"
-
+        if self.should_publish:
+            topic = self.publishIds[publishId]
+            if self.publish_topic.__contains__(topic):
+                self.client.publish(topic, payload=data)
+            else:
+                return "not a publish topic"
+        else: 
+            return "shouldn't publish, no one is listening"
+        
     def start_heartbeat(self):
         while True:
             self.client.publish(self.heartbeat_topic, f"beat", qos=1)
