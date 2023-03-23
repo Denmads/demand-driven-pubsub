@@ -40,6 +40,12 @@ namespace ActorBackend
                 ),
                 SingletonActorIdentities.CLIENT_MANAGER
             );
+            system.Root.SpawnNamed(
+                Props.FromProducer(
+                    () => new UserManagerGrainActor((context, _) => new UserManagerGrain(context, config.Value))
+                ),
+                SingletonActorIdentities.USER_MANAGER
+            );
 
             app.Run();
         }

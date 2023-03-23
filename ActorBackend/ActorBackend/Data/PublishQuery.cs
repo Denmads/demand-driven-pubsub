@@ -7,6 +7,6 @@
         public string CypherQuery { get; set; }
         public string TargetNode { get; set; }
         public string DataType { get; set; }
-
+        public List<string> Roles { get; set; }
     }
 }
