@@ -66,14 +66,17 @@ namespace ActorBackend.HealthMonitoring
 
         private void CheckTimer_Elapsed(object? sender, System.Timers.ElapsedEventArgs e)
         {
+            if (CurrentState == State.Dead)
+                return;
+
             var diff = DateTime.UtcNow - lastResponseTime;
 
             if (diff.TotalSeconds > connectionTimeoutSeconds)
             {
-                CurrentState = State.Dead;
-
                 if (onConnectionDied != null)
                     onConnectionDied();
+
+                CurrentState = State.Dead;
             }
         }
     }

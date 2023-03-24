@@ -8,6 +8,7 @@ using System.Text;
 using Newtonsoft.Json;
 using ActorBackend.Data;
 using ActorBackend.Utils;
+using Proto.Cluster.PubSub;
 
 namespace ActorBackend.Actors.Client
 {
@@ -20,6 +21,15 @@ namespace ActorBackend.Actors.Client
         private Task HandlePublishQuery(string message)
         {
             PublishQuery query = JsonConvert.DeserializeObject<PublishQuery>(message)!;
+
+            // If the publish already exists
+            var publish = publishes.FirstOrDefault(pair => pair.Value.PublishId == query.PublishId);
+            if (!publish.Equals(new KeyValuePair<string, PublishState>()))
+            {
+                var applicationMessage = CreateQueryExistsResponseMessage(query.RequestId);
+                mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+                return Task.CompletedTask;
+            }
 
             pendingQueries.Add(query.RequestId, query.PublishId);
 
@@ -43,6 +53,16 @@ namespace ActorBackend.Actors.Client
         {
             SubscribeQuery query = JsonConvert.DeserializeObject<SubscribeQuery>(message)!;
 
+            // If a subscription already exists
+            var subscription = subscribeTopics.FirstOrDefault(s => s.Key == query.SubscriptionId);
+            if (!subscription.Equals(new KeyValuePair<string, string>()))
+            {
+                var applicationMessage = CreateQueryExistsResponseMessage(query.RequestId);
+                mqttClient.PublishAsync(applicationMessage, CancellationToken.None);
+                return Task.CompletedTask;
+            }
+
+
             var queryInfo = new SubscribeQueryInfo
             {
                 ClientActorIdentity = identity.Identity,
@@ -63,21 +83,42 @@ namespace ActorBackend.Actors.Client
             return Task.CompletedTask;
         }
 
-        private MqttApplicationMessage CreateQueryResponseMessage(QueryResponse response, string topic)
+        private MqttApplicationMessage CreateMqttResponseMessage(string messageType, object json, string topic)
         {
-            var json = new {
-                response.RequestId,
-                Topic = topic
-            };
-
-            var queryResponse = $"query-result<>{JsonConvert.SerializeObject(json)}";
+            var queryResponse = $"{messageType}<>{JsonConvert.SerializeObject(json)}";
 
             var applicationMessage = new MqttApplicationMessageBuilder()
-                .WithTopic(MqttTopicHelper.ClientResponse(clientId!))
+                .WithTopic(topic)
                 .WithPayload(queryResponse)
                 .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
                 .Build();
             return applicationMessage;
+        }
+
+        private MqttApplicationMessage CreateQueryExistsResponseMessage(int requestId)
+        {
+            var json = new
+            {
+                RequestId = requestId
+            };
+
+            return CreateMqttResponseMessage(
+                ResponseMessageType.QUERY_EXISTS, json, 
+                MqttTopicHelper.ClientResponse(clientId!)
+            );
+        }
+
+        private MqttApplicationMessage CreateQueryResponseMessage(int requestId, string topic)
+        {
+            var json = new {
+                RequestId = requestId,
+                Topic = topic
+            };
+
+            return CreateMqttResponseMessage(
+                ResponseMessageType.QUERY_RESULT, json,
+                MqttTopicHelper.ClientResponse(clientId!)
+            );
         }
 
         private MqttApplicationMessage CreateQueryErrorResponseMessage(ErrorResponse response)
@@ -87,14 +128,10 @@ namespace ActorBackend.Actors.Client
                 response.Message
             };
 
-            var queryResponse = $"query-error<>{JsonConvert.SerializeObject(json)}";
-
-            var applicationMessage = new MqttApplicationMessageBuilder()
-                .WithTopic(MqttTopicHelper.ClientResponse(clientId!))
-                .WithPayload(queryResponse)
-                .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
-                .Build();
-            return applicationMessage;
+            return CreateMqttResponseMessage(
+                ResponseMessageType.QUERY_ERROR, json,
+                MqttTopicHelper.ClientResponse(clientId!)
+            );
         }
 
         public override Task QueryResult(QueryResponse request)
@@ -103,7 +140,7 @@ namespace ActorBackend.Actors.Client
             if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.PublishResponse)
             {
                 HandlePublishResponse(request.RequestId, request.PublishResponse);
-                applicationMessage = CreateQueryResponseMessage(request, request.PublishResponse.Topic);
+                applicationMessage = CreateQueryResponseMessage(request.RequestId, request.PublishResponse.Topic);
             }
             else if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.SubscribeResponse)
             {
@@ -111,7 +148,7 @@ namespace ActorBackend.Actors.Client
                 var success = HandleSubscribeResponse(request.RequestId, request.SubscribeResponse, subscribeTopic);
 
                 if (success)
-                    applicationMessage = CreateQueryResponseMessage(request, subscribeTopic);
+                    applicationMessage = CreateQueryResponseMessage(request.RequestId, subscribeTopic);
                 else
                     applicationMessage = CreateQueryErrorResponseMessage(new ErrorResponse { Message = "An error occurred while trying to execute the subscribe query." });
             }
@@ -152,5 +189,13 @@ namespace ActorBackend.Actors.Client
 
             return true;
         }
+    }
+
+    internal class ResponseMessageType
+    {
+        public const string QUERY_RESULT = "query-result";
+        public const string QUERY_SUCCESS = "query-success";
+        public const string QUERY_EXISTS = "query-exists";
+        public const string QUERY_ERROR = "query-error";
     }
 }
