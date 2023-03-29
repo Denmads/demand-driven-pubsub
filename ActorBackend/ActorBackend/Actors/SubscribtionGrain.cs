@@ -91,7 +91,7 @@ namespace ActorBackend.Actors
                 {
                     lastValues[dataNode.Key] = value;
 
-                    SendUpdatedDataSet();
+                    SendUpdatedDataSet(dataNode.Key);
 
                     break;
                 }
@@ -100,9 +100,13 @@ namespace ActorBackend.Actors
             return Task.CompletedTask;
         }
 
-        private void SendUpdatedDataSet()
+        private void SendUpdatedDataSet(string changedNode)
         {
-            var dataJson = new { SubscriptionId = subId, Data = new Dictionary<string, DataNode>()};
+            var dataJson = new { 
+                SubscriptionId = subId,
+                ChangedNode = changedNode,
+                Data = new Dictionary<string, DataNode>()
+            };
 
             foreach (var dataNode in nodeCollection.Nodes)
             {

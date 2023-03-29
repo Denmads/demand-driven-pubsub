@@ -1,17 +1,25 @@
-from PythonClient.Client import Client
+from threading import Thread
+from PythonClient.BaseClient import BaseClient
 import asyncio
 
 mode = input("What Mode (p1/p2/s)? ")
 
 def on_data_received(data):
     print(data)
+    
+def connect_client(client: BaseClient):
+    client.connect_to_broker()
+    
+    while not client.connected:
+            pass
+
+    thread = Thread(target=client.start_heartbeat)
+    thread.daemon = True
+    thread.start()
 
 if mode == "s":
-    client = Client("sub1")
-    client.connect_to_broker()
-
-    while not client.connected:
-        pass
+    client = BaseClient("sub1")
+    connect_client(client)
     
     client.give_cypher("MATCH (st:Sensor {type: 'temperature'}) MATCH (sc:Sensor {type: 'co2'})")
     client.target_node = ["st", "sc"]
@@ -23,12 +31,8 @@ if mode == "s":
     input()
     
 elif mode == "p1":
-    client = Client("publisher1")
-    client.connect_to_broker()
-
-    print("waiting")
-    while not client.connected:
-        pass
+    client = BaseClient("publisher1")
+    connect_client(client)
     
     print("connected")
     client.give_cypher("""
@@ -53,12 +57,8 @@ elif mode == "p1":
         client.publishData(next_val, "pub1")
 
 elif mode == "p2":
-    client = Client("publisher2")
-    client.connect_to_broker()
-
-    print("waiting")
-    while not client.connected:
-        pass
+    client = BaseClient("publisher2")
+    connect_client(client)
     
     print("connected")
     client.give_cypher("""

@@ -23,7 +23,7 @@ class Interface:
         while not self.client.connected:
             pass
 
-        thread = threading.Thread(self.client.start_heartbeat())
+        thread = threading.Thread(self.client.start_heartbeat)
         thread.daemon = True
         thread.start()
 

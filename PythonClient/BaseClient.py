@@ -12,6 +12,7 @@ class BaseClient:
         self.publish_topic = []
         self.subscribe_topics = []
         self.response_topic = f"ddps/system/{self.id}/response"
+        self.updates_topic = f"ddps/system/{self.id}/updates"
         
         self.connect_topic = f"ddps/system/clientmanager/connect"
         self.query_topicc = f"ddps/system/{self.id}/query"
@@ -21,7 +22,7 @@ class BaseClient:
         self.heartbeat_interval = 10
 
         self.update_topic = f"ddps/system/{self.id}/updates"
-        self.should_publish = False
+        self.should_publish = True
 
         self.subscriptionId = {}
 
@@ -67,14 +68,13 @@ class BaseClient:
             self.client.loop()
             pass
 
-        print("connected")
-
         print("publish connection message")
         self.client.publish(self.connect_topic, "connect<>" + json.dumps({"ClientId": self.id, "ConnectionTimeout": self.connectionTimeout}), qos=1)
 
 
     def handleResponse(self, response):
         response_type = response.split("<>")[0]
+        print(response_type)
         jsonResponse = response.split("<>")[1]
         j = json.loads(jsonResponse)
         if response_type == "query-result":
@@ -93,12 +93,14 @@ class BaseClient:
             publishes = j["Publishes"]
             subscriptions = j["Subscriptions"]
             for p in publishes:
-                self.publishIds[p.Id] = p.Topic
-                self.add_publish_topic(p.Topic)
+                self.publishIds[p["Id"]] = p["Topic"]
+                self.add_publish_topic(p["Topic"])
             
             for s in subscriptions:
                 self.add_subscirbe_topic(s.topic)
-                self.subscriptionId[s.Id] = s.Topic
+                self.subscriptionId[s["Id"]] = s["Topic"]
+
+            self.connected = True
 
         elif response_type == "connect-ack":
             print("connect-ack")
@@ -111,15 +113,23 @@ class BaseClient:
         elif response_type == "query-error":
             pass
             print("query response error")
+        
+        elif response_type == "query-exists":
+            self.requestToPublishid.pop((j["RequestID"],), None)
+            self.requests.pop((j["RequestID"],), None)
+            print("query-exists")
 
         elif response_type == "publish-state-change":
-            self.should_publish = j["Active"]
+            print("topic state change")
+            print(j)
 
         elif response_type == "dependency-died":
-            self.should_publish = False
+            print("dependency died")
+            print(j)
 
         elif response_type == "dependency-resurrected":
-            self.should_publish = True
+            print("dependency ressurected")
+            print(j)
 
         else:
             print("else")
@@ -138,8 +148,8 @@ class BaseClient:
 
     def on_message(self, client, userdata, msg):
         payload: str = msg.payload.decode('utf-8')
-        print(f'Received message on topic {msg.topic}: {payload}')
-        if msg.topic == self.response_topic:
+        #print(f'Received message on topic {msg.topic}: {payload}')
+        if msg.topic == self.response_topic or msg.topic == self.updates_topic:
             self.handleResponse(payload)
         
         else:
@@ -166,7 +176,7 @@ class BaseClient:
         query = """publish<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNode": "{2}", "DataType": "{3}", "PublishId": "{4}" }}""".format(self.request_id, self.cypher, self.target_node, self.data_type, publishId)
         self.request_id += 1
         self.client.publish(self.query_topicc, query, qos=1)
-        return query
+        return
 
     def send_sub_query(self, callback, subscribion_id):
         self.requests[(self.request_id, )] = "subscribe"
@@ -181,6 +191,7 @@ class BaseClient:
         if self.should_publish:
             topic = self.publishIds[publishId]
             if self.publish_topic.__contains__(topic):
+                print("Sending")
                 self.client.publish(topic, payload=data)
             else:
                 return "not a publish topic"
