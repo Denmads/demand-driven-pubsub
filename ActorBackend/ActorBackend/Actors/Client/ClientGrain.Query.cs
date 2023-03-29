@@ -8,7 +8,6 @@ using System.Text;
 using Newtonsoft.Json;
 using ActorBackend.Data;
 using ActorBackend.Utils;
-using Proto.Cluster.PubSub;
 
 namespace ActorBackend.Actors.Client
 {
@@ -35,12 +34,17 @@ namespace ActorBackend.Actors.Client
 
             var publishQuery = new PublishQueryInfo
             {
-                ClientActorIdentity = identity.Identity,
-                RequestId = query.RequestId,
+                Info = new RequestInfo
+                {
+                    ClientActorIdentity = identity.Identity,
+                    RequestId = query.RequestId,
+                },
                 CypherQuery = query.CypherQuery,
                 StreamNode = query.TargetNode,
                 DataType = query.DataType
             };
+            publishQuery.Roles.AddRange(query.Roles);
+
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             queryResolver.ResolveQuery(new Neo4jQuery { PublishInfo = publishQuery }, CancellationToken.None);
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
@@ -65,8 +69,15 @@ namespace ActorBackend.Actors.Client
 
             var queryInfo = new SubscribeQueryInfo
             {
-                ClientActorIdentity = identity.Identity,
-                RequestId = query.RequestId,
+                Info = new RequestInfo
+                {
+                    ClientActorIdentity = identity.Identity,
+                    RequestId = query.RequestId,
+                    Operator = new User { 
+                        Username = query.Account,
+                        Password = query.AccountPassword
+                    }
+                },
                 CypherQuery = query.CypherQuery
             };
             query.TargetNodes.ForEach((n) =>
@@ -121,10 +132,11 @@ namespace ActorBackend.Actors.Client
             );
         }
 
-        private MqttApplicationMessage CreateQueryErrorResponseMessage(ErrorResponse response)
+        private MqttApplicationMessage CreateQueryErrorResponseMessage(int requestId, ErrorResponse response)
         {
             var json = new
             {
+                RequestId = requestId,
                 response.Message
             };
 
@@ -150,11 +162,15 @@ namespace ActorBackend.Actors.Client
                 if (success)
                     applicationMessage = CreateQueryResponseMessage(request.RequestId, subscribeTopic);
                 else
-                    applicationMessage = CreateQueryErrorResponseMessage(new ErrorResponse { Message = "An error occurred while trying to execute the subscribe query." });
+                    applicationMessage = CreateQueryErrorResponseMessage(request.RequestId, new ErrorResponse { Message = "An error occurred while trying to execute the subscribe query." });
             }
             else if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.ErrorResponse)
             {
-                applicationMessage = CreateQueryErrorResponseMessage(request.ErrorResponse);
+                applicationMessage = CreateQueryErrorResponseMessage(request.RequestId, request.ErrorResponse);
+            }
+            else if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.SuccessResponse)
+            {
+                applicationMessage = CreateQuerySuccessResponseMessage(request.RequestId);
             }
 
             mqttClient.PublishAsync(applicationMessage, CancellationToken.None);

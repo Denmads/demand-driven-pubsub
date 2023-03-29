@@ -11,22 +11,58 @@ message Neo4jQuery {
 	oneof query_type {
 		PublishQueryInfo publish_info = 1;
 		SubscribeQueryInfo subscribe_info = 2;
+		CreateUserQueryInfo create_user_info = 3;
+		DeleteUserQueryInfo delete_user_info = 4;
+		AddRoleQueryInfo add_role_info = 5;
+		RemoveRoleQueryInfo remove_role_info = 6;
 	}
 }
 
-message PublishQueryInfo {
+message RequestInfo {
 	string client_actor_identity = 1;
 	int32  request_id = 2;
-	string cypher_query = 3;
-	string stream_node = 4;
-	string data_type = 5;
+	optional User operator = 3;
+}
+
+message User {
+	string username = 1;
+	string password = 2;
+}
+
+message CreateUserQueryInfo {
+	RequestInfo info = 1;
+	User creating = 2;
+}
+
+message DeleteUserQueryInfo {
+	RequestInfo info = 1;
+	string username = 2;
+}
+
+message AddRoleQueryInfo {
+	RequestInfo info = 1;
+	string username = 2;
+	string role = 3;
+}
+
+message RemoveRoleQueryInfo {
+	RequestInfo info = 1;
+	string username = 2;
+	string role = 3;
+}
+
+message PublishQueryInfo {
+	RequestInfo info = 1;
+	string cypher_query = 2;
+	string stream_node = 3;
+	string data_type = 4;
+	repeated string roles = 5;
 }
 
 message SubscribeQueryInfo {
-	string client_actor_identity = 1;
-	int32  request_id = 2;
-	string cypher_query = 3;
-	repeated string target_nodes = 4;
+	RequestInfo info = 1;
+	string cypher_query = 2;
+	repeated string target_nodes = 3;
 }
 
 message PublishQueryResponse {
@@ -51,12 +87,17 @@ message ErrorResponse {
 	string message = 1;
 }
 
+message SuccessResponse {
+
+}
+
 message QueryResponse {
 	int32 request_id = 1;
 	oneof query_type {
 		PublishQueryResponse publish_response = 2;
 		SubscriptionQueryResponse subscribe_response = 3;
 		ErrorResponse error_response = 4;
+		SuccessResponse success_response = 5;
 	}
 }
 

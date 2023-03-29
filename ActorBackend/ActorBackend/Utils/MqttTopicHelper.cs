@@ -11,6 +11,16 @@ namespace ActorBackend.Utils
             return config.MQTT.TopicPrefix + "/clientmanager/connect";
         }
 
+        public static string UserManagerUsers()
+        {
+            return config.MQTT.TopicPrefix + "/account";
+        }
+
+        public static string UserManagerRoles()
+        {
+            return config.MQTT.TopicPrefix + "/account/role";
+        }
+
         public static string ClientHeartbeat(string clientId)
         {
             return config.MQTT.TopicPrefix + $"/{clientId}/heartbeat";

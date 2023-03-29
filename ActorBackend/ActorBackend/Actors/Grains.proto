@@ -23,12 +23,15 @@ service QueryResolverGrain {
 }
 
 service Neo4jQueryGrain {
-	rpc ResolvePublishQuery (PublishQueryInfo) returns (google.protobuf.Empty);
-	rpc ResolveSubscribeQuery (SubscribeQueryInfo) returns (google.protobuf.Empty);
+	rpc ResolveQuery (Neo4jQuery) returns (google.protobuf.Empty);
 }
 
 service SubscribtionGrain {
 	rpc Create (SubscriptionGrainCreateInfo) returns (google.protobuf.Empty);
 
 	rpc NotifyDependenciesOfStateChange (DependentStateChangedMessage) returns (google.protobuf.Empty);
+}
+
+service UserManagerGrain {
+
 }

@@ -1,4 +1,5 @@
 ﻿using ActorBackend.Actors;
+using ActorBackend.Actors.Neo4jGrain;
 using ActorBackend.Actors.Client;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Options;

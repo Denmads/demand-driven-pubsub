@@ -6,5 +6,7 @@
         public string SubscriptionId { get; set; }
         public string CypherQuery { get; set; }
         public List<string> TargetNodes { get; set; }
+        public string Account { get; set; }
+        public string AccountPassword { get; set; }
     }
 }

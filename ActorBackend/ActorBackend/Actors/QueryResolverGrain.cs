@@ -10,7 +10,7 @@ namespace ActorBackend.Actors
 
         private const int MAX_QUERIES_MAIL_BOX = 10;
 
-        private Dictionary<string, int> actorQueryCount= new Dictionary<string, int>();
+        private Dictionary<string, int> actorQueryCount = new Dictionary<string, int>();
         private int queryGrainCount = 0;
 
         public QueryResolverGrain(IContext context, AppConfig config) : base(context)
@@ -20,21 +20,15 @@ namespace ActorBackend.Actors
 
         public override Task QueryResolved(QueryResolvedResponse request)
         {
-            throw new NotImplementedException();
+            actorQueryCount[request.QueryActorIdentity] = actorQueryCount[request.QueryActorIdentity] - 1;
+            return Task.CompletedTask;
         }
 
         public override Task ResolveQuery(Neo4jQuery request)
         {
             Neo4jQueryGrainClient client = FindQueryClient();
 
-            if (request.QueryTypeCase == Neo4jQuery.QueryTypeOneofCase.PublishInfo)
-            {
-                client.ResolvePublishQuery(request.PublishInfo, CancellationToken.None);
-            }
-            else if (request.QueryTypeCase == Neo4jQuery.QueryTypeOneofCase.SubscribeInfo)
-            {
-                client.ResolveSubscribeQuery(request.SubscribeInfo, CancellationToken.None);
-            }
+            client.ResolveQuery(request, CancellationToken.None);
 
             return Task.CompletedTask;
         }
@@ -54,7 +48,7 @@ namespace ActorBackend.Actors
                 var identity = CreateNeo4jQueryGrain();
                 return Context.Cluster().GetNeo4jQueryGrain(identity);
             }
-            
+
             return Context.Cluster().GetNeo4jQueryGrain(lowestKvp.Key);
         }
 
