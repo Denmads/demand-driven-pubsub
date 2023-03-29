@@ -111,8 +111,7 @@ class BaseClient:
             self.connected = True
 
         elif response_type == "query-error":
-            pass
-            print("query response error")
+            print(j)
         
         elif response_type == "query-exists":
             self.requestToPublishid.pop((j["RequestID"],), None)
@@ -173,7 +172,7 @@ class BaseClient:
     def send_pub_query(self, publishId):
         self.requests[(self.request_id, )] = "publish"
         self.requestToPublishid[(self.request_id, )] = publishId
-        query = """publish<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNode": "{2}", "DataType": "{3}", "PublishId": "{4}" }}""".format(self.request_id, self.cypher, self.target_node, self.data_type, publishId)
+        query = """publish<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNode": "{2}", "DataType": "{3}", "PublishId": "{4}", "Roles": [] }}""".format(self.request_id, self.cypher, self.target_node, self.data_type, publishId)
         self.request_id += 1
         self.client.publish(self.query_topicc, query, qos=1)
         return

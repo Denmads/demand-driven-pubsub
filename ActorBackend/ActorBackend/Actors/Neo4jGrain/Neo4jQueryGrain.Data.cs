@@ -83,16 +83,15 @@ namespace ActorBackend.Actors.Neo4jGrain
 
         private bool HasRequiredRoles(User user, IRecord record)
         {
-            var nodes = record.Values.Values as IEnumerable<INode>;
-            var roleLists = from n in nodes select n.Properties["roles"].As<string>().Split(";").ToList();
-            var requiredRoles = roleLists.Aggregate(new List<string>(), (acc, x) =>
-            {
-                return acc.Union(x).ToList();
-            });
+            var nodes = record.Values;
+            var roleLists = from n in nodes
+                            select ((INode)n.Value).Properties["roles"].As<string>().Split(";").ToList();
 
-            var userRoles = GetUserRoles(user);
+            var requiredRoles = roleLists.SelectMany(x => x)
+                                    .Where(r => r.Length > 0)
+                                    .ToArray();
 
-            return requiredRoles.All(x=> userRoles.Contains(x));
+            return HasRoles(user, requiredRoles);
         }
     }
 }

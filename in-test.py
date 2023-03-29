@@ -1,8 +1,9 @@
 from threading import Thread
 from PythonClient.BaseClient import BaseClient
 import asyncio
+import sys
 
-mode = input("What Mode (p1/p2/s)? ")
+mode = sys.argv[1]
 
 def on_data_received(data):
     print(data)

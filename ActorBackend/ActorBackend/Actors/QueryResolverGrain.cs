@@ -28,6 +28,7 @@ namespace ActorBackend.Actors
         {
             Neo4jQueryGrainClient client = FindQueryClient();
 
+            
             client.ResolveQuery(request, CancellationToken.None);
 
             return Task.CompletedTask;

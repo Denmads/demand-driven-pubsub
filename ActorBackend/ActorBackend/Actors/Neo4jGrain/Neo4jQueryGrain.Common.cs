@@ -10,14 +10,14 @@ namespace ActorBackend.Actors.Neo4jGrain
 
     public partial class Neo4jQueryGrain : Neo4jQueryGrainBase
     {
-        private IResult? ExecuteCypher(string cypher, bool write = false)
+        private List<IRecord> ExecuteCypher(string cypher, bool write = false)
         {
             if (write)
             {
                 return neo4jSession.ExecuteWrite(tx =>
                 {
                     var result = tx.Run(cypher);
-                    return result;
+                    return result.ToList();
                 });
             }
             else
@@ -25,7 +25,7 @@ namespace ActorBackend.Actors.Neo4jGrain
                 return neo4jSession.ExecuteRead(tx =>
                 {
                     var result = tx.Run(cypher);
-                    return result;
+                    return result.ToList();
                 });
             }
         }
@@ -105,7 +105,7 @@ namespace ActorBackend.Actors.Neo4jGrain
             string getUserCypher = $"MATCH (user:User {{username: '{user.Username}'}}) RETURN user";
             var res = ExecuteCypher(getUserCypher);
 
-            if (res == null) //No user found
+            if (res.Count == 0) //No user found
                 return new string[0];
 
             var userRes = res.ElementAt(0)["user"] as INode;

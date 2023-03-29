@@ -67,22 +67,26 @@ namespace ActorBackend.Actors.Client
             }
 
 
+            var user = query.Account == null ? new User() : new User {
+                Username = query.Account,
+                Password = query.AccountPassword
+            };
+
             var queryInfo = new SubscribeQueryInfo
             {
                 Info = new RequestInfo
                 {
                     ClientActorIdentity = identity.Identity,
                     RequestId = query.RequestId,
-                    Operator = new User { 
-                        Username = query.Account,
-                        Password = query.AccountPassword
-                    }
+                    Operator = user
                 },
                 CypherQuery = query.CypherQuery
             };
+
             query.TargetNodes.ForEach((n) =>
             {
                 queryInfo.TargetNodes.Add(n);
+
             });
 
             pendingQueries.Add(query.RequestId, query.SubscriptionId);
@@ -115,6 +119,19 @@ namespace ActorBackend.Actors.Client
 
             return CreateMqttResponseMessage(
                 ResponseMessageType.QUERY_EXISTS, json, 
+                MqttTopicHelper.ClientResponse(clientId!)
+            );
+        }
+
+        private MqttApplicationMessage CreateQuerySuccessResponseMessage(int requestId)
+        {
+            var json = new
+            {
+                RequestId = requestId
+            };
+
+            return CreateMqttResponseMessage(
+                ResponseMessageType.QUERY_SUCCESS, json,
                 MqttTopicHelper.ClientResponse(clientId!)
             );
         }
@@ -187,13 +204,13 @@ namespace ActorBackend.Actors.Client
         private bool HandleSubscribeResponse(int requestId, SubscriptionQueryResponse response, string topic)
         {
             var subId = pendingQueries.GetValueOrDefault(requestId, "");
-            if (subId == null)
+            if (subId == "")
             {
                 return false;
             }
 
-            subscribeTopics[pendingQueries[requestId]] = topic;
-            pendingQueries.Remove(requestId);
+            subscribeTopics[subId] = topic;
+            pendingQueries.Remove(requestId);   
 
             string subGrainId = $"{clientId}.{subId}";
 

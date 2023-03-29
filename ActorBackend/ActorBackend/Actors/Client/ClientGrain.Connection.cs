@@ -91,6 +91,8 @@ namespace ActorBackend.Actors.Client
 
                 connectionState.onConnectionResurrected = () =>
                 {
+                    logger.LogInformation($"connection ressurected");
+
                     //Notify dependents
                     foreach (var publish in publishes)
                     {

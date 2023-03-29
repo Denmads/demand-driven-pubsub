@@ -1,4 +1,4 @@
-﻿namespace ActorBackend.Data
+﻿    namespace ActorBackend.Data
 {
     public class PublishQuery
     {
