@@ -33,5 +33,4 @@ service SubscribtionGrain {
 }
 
 service UserManagerGrain {
-
 }

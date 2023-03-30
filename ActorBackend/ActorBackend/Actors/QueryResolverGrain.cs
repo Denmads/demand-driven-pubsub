@@ -18,6 +18,22 @@ namespace ActorBackend.Actors
             this.config = config;
         }
 
+        private bool ensuredAdmin = false;
+        private Neo4jQuery CreateEnsureAdminUserExistsRequest()
+        {
+            Neo4jQuery neo4jQuery = new Neo4jQuery();
+            neo4jQuery.CreateAdminUserInfo = new CreateAdminUserQueryInfo
+            {
+                User = new User
+                {
+                    Username = "admin",
+                    Password = "admin"
+                }
+            };
+            
+            return neo4jQuery;
+        }
+
         public override Task QueryResolved(QueryResolvedResponse request)
         {
             actorQueryCount[request.QueryActorIdentity] = actorQueryCount[request.QueryActorIdentity] - 1;
@@ -28,7 +44,16 @@ namespace ActorBackend.Actors
         {
             Neo4jQueryGrainClient client = FindQueryClient();
 
-            
+            if (!ensuredAdmin)
+            {
+                ensuredAdmin = true;
+                var adminReq = CreateEnsureAdminUserExistsRequest();
+                Proto.Log.CreateLogger("QUERY-RESOLVER").LogInformation("Admin query calling");
+                client.ResolveQuery(adminReq, CancellationToken.None);
+                Thread.Sleep(1000);
+            }
+            Proto.Log.CreateLogger("QUERY-RESOLVER").LogInformation("other query calling");
+
             client.ResolveQuery(request, CancellationToken.None);
 
             return Task.CompletedTask;

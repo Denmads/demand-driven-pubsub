@@ -34,7 +34,11 @@ namespace ActorBackend.Actors.Neo4jGrain
         {
             try
             {
-                if (request.QueryTypeCase == Neo4jQuery.QueryTypeOneofCase.PublishInfo)
+                if (request.QueryTypeCase == Neo4jQuery.QueryTypeOneofCase.CreateAdminUserInfo)
+                {
+                    await ResolveCreateAdminUserQuery(request.CreateAdminUserInfo);
+                }
+                else if (request.QueryTypeCase == Neo4jQuery.QueryTypeOneofCase.PublishInfo)
                 {
                     await ResolvePublishQuery(request.PublishInfo);
                 }
@@ -44,19 +48,19 @@ namespace ActorBackend.Actors.Neo4jGrain
                 }
                 else if (request.QueryTypeCase == Neo4jQuery.QueryTypeOneofCase.CreateUserInfo)
                 {
-                    await ResolveSubscribeQuery(request.SubscribeInfo);
+                    await ResolveCreateUserQuery(request.CreateUserInfo);
                 }
                 else if (request.QueryTypeCase == Neo4jQuery.QueryTypeOneofCase.DeleteUserInfo)
                 {
-                    await ResolveSubscribeQuery(request.SubscribeInfo);
+                    await ResolveDeleteUserQuery(request.DeleteUserInfo);
                 }
                 else if (request.QueryTypeCase == Neo4jQuery.QueryTypeOneofCase.AddRoleInfo)
                 {
-                    await ResolveSubscribeQuery(request.SubscribeInfo);
+                    await ResolveAddRoleQuery(request.AddRoleInfo);
                 }
                 else if (request.QueryTypeCase == Neo4jQuery.QueryTypeOneofCase.RemoveRoleInfo)
                 {
-                    await ResolveSubscribeQuery(request.SubscribeInfo);
+                    await ResolveRemoveRoleQuery(request.RemoveRoleInfo);
                 }
             }
             catch (Exception ex)
@@ -65,7 +69,7 @@ namespace ActorBackend.Actors.Neo4jGrain
 
                 var error = new ErrorResponse { Message = ex.Message };
                 await Context.Cluster().GetClientGrain(info.ClientActorIdentity)
-                    .QueryResult(new QueryResponse { RequestId = info.RequestId, ErrorResponse = error }, CancellationToken.None);
+                    .QueryResult(new QueryResponse { RequestId = info != null ? info.RequestId : -1, ErrorResponse = error }, CancellationToken.None);
             }
             finally
             {
@@ -74,7 +78,7 @@ namespace ActorBackend.Actors.Neo4jGrain
             }
         }
 
-        private RequestInfo GetInfo(Neo4jQuery query)
+        private RequestInfo? GetInfo(Neo4jQuery query)
         {
             switch (query.QueryTypeCase)
             {

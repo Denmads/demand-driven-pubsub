@@ -9,6 +9,20 @@ namespace ActorBackend.Actors.Neo4jGrain
 
     public partial class Neo4jQueryGrain : Neo4jQueryGrainBase
     {
+        public async Task ResolveCreateAdminUserQuery(CreateAdminUserQueryInfo request)
+        {
+            string hashedPass = PasswordUtil.HashPassword(request.User.Password);
+
+            string cypher = $@"
+            MERGE (u:User {{username: '{request.User.Username}'}})
+            SET u.password = '{hashedPass}'
+            MERGE (r:Role {{name: 'Admin'}})
+            MERGE (u)-[:HAS_ROLE]->(r)
+            ";
+
+            ExecuteCypher(cypher, write: true);
+        }
+
         public async Task ResolveCreateUserQuery(CreateUserQueryInfo request)
         {
             if (!HasAdminRole(request.Info.Operator))
@@ -52,7 +66,7 @@ namespace ActorBackend.Actors.Neo4jGrain
             }
 
             string cypher = $"MATCH (u:User {{username: '{request.Username}'}}) ";
-            cypher += $"MATCH (r:Role {{name: '{request.Role}'}}) ";
+            cypher += $"MERGE (r:Role {{name: '{request.Role}'}}) ";
             cypher += $"MERGE (u)-[:HAS_ROLE]->(r)";
             ExecuteCypher(cypher, write: true);
 

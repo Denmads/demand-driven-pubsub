@@ -15,6 +15,7 @@ message Neo4jQuery {
 		DeleteUserQueryInfo delete_user_info = 4;
 		AddRoleQueryInfo add_role_info = 5;
 		RemoveRoleQueryInfo remove_role_info = 6;
+		CreateAdminUserQueryInfo create_admin_user_info = 7;
 	}
 }
 
@@ -27,6 +28,10 @@ message RequestInfo {
 message User {
 	string username = 1;
 	string password = 2;
+}
+
+message CreateAdminUserQueryInfo {
+	User user = 1;
 }
 
 message CreateUserQueryInfo {

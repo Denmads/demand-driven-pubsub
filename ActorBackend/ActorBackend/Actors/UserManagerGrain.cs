@@ -45,15 +45,16 @@ namespace ActorBackend.Actors
                             Operator = new User
                             {
                                 Username = query.Account,
-                                Password = query.AccountPassword
+                                Password = PasswordUtil.DecodeBase64(query.AccountPassword)
                             }
                         },
                         Creating = new User
                         {
                             Username = query.Username,
-                            Password = query.Password
+                            Password = PasswordUtil.DecodeBase64(query.Password)
                         }
                     };
+
                 }
                 else if (message.Topic == MqttTopicHelper.UserManagerUsers() && messageTokens[0] == "delete")
                 {
@@ -67,7 +68,7 @@ namespace ActorBackend.Actors
                             Operator = new User
                             {
                                 Username = query.Account,
-                                Password = query.AccountPassword
+                                Password = PasswordUtil.DecodeBase64(query.AccountPassword)
                             }
                         },
                         Username = query.Username
@@ -85,7 +86,7 @@ namespace ActorBackend.Actors
                             Operator = new User
                             {
                                 Username = query.Account,
-                                Password = query.AccountPassword
+                                Password = PasswordUtil.DecodeBase64(query.AccountPassword)
                             }
                         },
                         Username = query.Username,
@@ -104,7 +105,7 @@ namespace ActorBackend.Actors
                             Operator = new User
                             {
                                 Username = query.Account,
-                                Password = query.AccountPassword
+                                Password = PasswordUtil.DecodeBase64(query.AccountPassword)
                             }
                         },
                         Username = query.Username,

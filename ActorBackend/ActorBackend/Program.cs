@@ -25,7 +25,6 @@ namespace ActorBackend
             });
             builder.Services.AddActorSystem();
             builder.Services.AddHostedService<ActorSystemClusterHostedService>();
-            //builder.Services.AddHostedService<MqttService>();
             var app = builder.Build();
 
             app.MapGet("/", () => "Hello World!");
