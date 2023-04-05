@@ -48,11 +48,9 @@ namespace ActorBackend.Actors
             {
                 ensuredAdmin = true;
                 var adminReq = CreateEnsureAdminUserExistsRequest();
-                Proto.Log.CreateLogger("QUERY-RESOLVER").LogInformation("Admin query calling");
                 client.ResolveQuery(adminReq, CancellationToken.None);
                 Thread.Sleep(1000);
             }
-            Proto.Log.CreateLogger("QUERY-RESOLVER").LogInformation("other query calling");
 
             client.ResolveQuery(request, CancellationToken.None);
 

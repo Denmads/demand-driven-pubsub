@@ -69,7 +69,7 @@ namespace ActorBackend.Actors.Client
 
             var user = query.Account == null ? new User() : new User {
                 Username = query.Account,
-                Password = query.AccountPassword
+                Password = PasswordUtil.DecodeBase64(query.AccountPassword)
             };
 
             var queryInfo = new SubscribeQueryInfo
@@ -183,7 +183,6 @@ namespace ActorBackend.Actors.Client
             }
             else if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.ErrorResponse)
             {
-                logger.LogError(request.ErrorResponse.Message);
                 applicationMessage = CreateQueryErrorResponseMessage(request.RequestId, request.ErrorResponse);
             }
             else if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.SuccessResponse)

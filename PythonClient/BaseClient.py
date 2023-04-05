@@ -1,3 +1,4 @@
+import base64
 import threading
 import paho.mqtt.client as mqtt
 import time
@@ -169,18 +170,22 @@ class BaseClient:
     def give_cypher(self, cypher):
         self.cypher = cypher
 
-    def send_pub_query(self, publishId):
+    def send_pub_query(self, publishId, roles: list[str] = None):
         self.requests[(self.request_id, )] = "publish"
         self.requestToPublishid[(self.request_id, )] = publishId
-        query = """publish<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNode": "{2}", "DataType": "{3}", "PublishId": "{4}", "Roles": [] }}""".format(self.request_id, self.cypher, self.target_node, self.data_type, publishId)
+        query = """publish<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNode": "{2}", "DataType": "{3}", "PublishId": "{4}", "Roles": {5} }}""".format(self.request_id, self.cypher, self.target_node, self.data_type, publishId, json.dumps(roles) if roles is not None else [])
         self.request_id += 1
         self.client.publish(self.query_topicc, query, qos=1)
         return
 
-    def send_sub_query(self, callback, subscribion_id):
+    def send_sub_query(self, callback, subscribion_id, user=None):
         self.requests[(self.request_id, )] = "subscribe"
         self.subscriptionId[subscribion_id] = callback
-        query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}" }}""".format(self.request_id, self.cypher, self.target_node, subscribion_id)
+        
+        encodedPassword = base64.b64encode(user[1].encode("utf-8")).decode("utf-8") if user is not None else ""
+        user_str = f', "Account": "{user[0]}", "AccountPassword": "{encodedPassword}"' if user is not None else ""
+        
+        query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}"{4} }}""".format(self.request_id, self.cypher, self.target_node, subscribion_id, user_str)
         print(query)
         self.request_id += 1
         self.client.publish(self.query_topicc, query, qos=1)
