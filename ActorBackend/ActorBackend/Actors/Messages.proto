@@ -17,6 +17,7 @@ message Neo4jQuery {
 		RemoveRoleQueryInfo remove_role_info = 6;
 		CreateAdminUserQueryInfo create_admin_user_info = 7;
 	}
+	bool rerun = 8;
 }
 
 message RequestInfo {
@@ -86,6 +87,7 @@ message SubscriptionQueryResponse {
 	}
 
 	repeated DataNodeCollection node_collections = 1;
+	SubscribeQueryInfo query = 2;
 }
 
 message ErrorResponse {
@@ -115,7 +117,8 @@ message SubscriptionGrainCreateInfo {
 	string client_actor_identity = 2;
 	string subscribtion_id = 3;
 	string subscription_topic = 4;
-	SubscriptionQueryResponse query = 5;
+	SubscribeQueryInfo query_info = 5;
+	SubscriptionQueryResponse query = 6;
 }
 
 message DependencyMessage {

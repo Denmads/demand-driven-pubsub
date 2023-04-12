@@ -3,6 +3,7 @@ using ActorBackend.Utils;
 using Neo4j.Driver;
 using Proto;
 using Proto.Cluster;
+using Proto.Cluster.PubSub;
 
 namespace ActorBackend.Actors.Neo4jGrain
 {
@@ -10,12 +11,6 @@ namespace ActorBackend.Actors.Neo4jGrain
 
     public partial class Neo4jQueryGrain : Neo4jQueryGrainBase
     {
-        private Neo4j.Driver.ISession neo4jSession;
-
-        public Neo4jQueryGrain(IContext context, IDriver neo4jDriver) : base(context)
-        {
-            neo4jSession = neo4jDriver.Session();
-        }
 
         public async Task ResolvePublishQuery(PublishQueryInfo request)
         {
@@ -27,13 +22,15 @@ namespace ActorBackend.Actors.Neo4jGrain
 
             ExecuteCypher(modifiedCypher, write: true);
 
-            var result = new PublishQueryResponse { Topic = mqttTopic };
 
+            var result = new PublishQueryResponse { Topic = mqttTopic };
             await Context.Cluster().GetClientGrain(request.Info.ClientActorIdentity)
                 .QueryResult(new QueryResponse { RequestId = request.Info.RequestId, PublishResponse = result }, CancellationToken.None);
+
+            await protoPublisher.Publish("metadata-update", new MetaDataUpdate());
         }
 
-        public async Task ResolveSubscribeQuery(SubscribeQueryInfo request)
+        public async Task ResolveSubscribeQuery(SubscribeQueryInfo request, bool rerun)
         {
             var modifiedCypher = request.CypherQuery + " RETURN " + string.Join(", ", request.TargetNodes.ToArray());
 
@@ -59,7 +56,7 @@ namespace ActorBackend.Actors.Neo4jGrain
                 res.Add(nodes);
             }
 
-            var queryResult = new SubscriptionQueryResponse();
+            var queryResult = new SubscriptionQueryResponse() { Query = request};
             res.ForEach(dict =>
             {
                 var collection = new SubscriptionQueryResponse.Types.DataNodeCollection();
@@ -76,9 +73,13 @@ namespace ActorBackend.Actors.Neo4jGrain
                 queryResult.NodeCollections.Add(collection);
             });
 
-
-            await Context.Cluster().GetClientGrain(request.Info.ClientActorIdentity)
-                .QueryResult(new QueryResponse { RequestId = request.Info.RequestId, SubscribeResponse = queryResult }, CancellationToken.None);
+            var response = new QueryResponse { RequestId = request.Info.RequestId, SubscribeResponse = queryResult };
+            if (rerun)
+                await Context.Cluster().GetSubscribtionGrain(request.Info.ClientActorIdentity)
+                    .QueryResult(response, CancellationToken.None);
+            else
+                await Context.Cluster().GetClientGrain(request.Info.ClientActorIdentity)
+                    .QueryResult(response, CancellationToken.None);
         }
 
         private bool HasRequiredRoles(User user, IRecord record)
