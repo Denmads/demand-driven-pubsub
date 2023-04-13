@@ -1,6 +1,3 @@
-def test1():
-    print("test1")
 
-
-def test2(input):
+def print(input):
     print(input)

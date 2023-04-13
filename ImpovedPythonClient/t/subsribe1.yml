@@ -1,0 +1,9 @@
+client: 
+  name: "sub1"
+  subscribers:
+    sub1:
+      id: 1 
+      function: "print"
+      targetNode: "s" 
+      type: "int"
+      cypher: "MATCH (s:Sensor {type: 'temperature'})"

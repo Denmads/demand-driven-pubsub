@@ -13,6 +13,8 @@ class Client:
         
         self.request_id = 0 # goes up when sending a message on query_topic 
 
+        self.should_publish = True
+
         #topics
         self.publish_topic = []
         self.subscribe_topics = []
@@ -39,7 +41,7 @@ class Client:
 
     def create_topics(self, prefix):
         self.response_topic = f"{prefix}{self.id}/response"
-        
+
         self.connect_topic = f"{prefix}clientmanager/connect"
         self.query_topicc = f"{prefix}{self.id}/query"
 
@@ -80,6 +82,7 @@ class Client:
         response_type = response.split("<>")[0]
         jsonResponse = response.split("<>")[1]
         j = json.loads(jsonResponse)
+        print(response_type)
         if response_type == "query-result":
             topic = j["Topic"]
             request_id = j["RequestId"]
@@ -92,10 +95,12 @@ class Client:
                 self.add_subscirbe_topic(topic)
 
         elif response_type == "reconnect-ack":
+            print("reconnect")
             self.heartbeatInterval = j["HeartbeatInterval"]
             publishes = j["Publishes"]
             subscriptions = j["Subscriptions"]
             for p in publishes:
+                print(p.Id)
                 self.publishIds[p.Id] = p.Topic
                 self.add_publish_topic(p.Topic)
             
@@ -181,6 +186,8 @@ class Client:
         self.client.publish(self.query_topicc, query, qos=1)
     
     def publishData(self, data, publishId):
+        print("publish id")
+        print(publishId)
         if self.should_publish:
             topic = self.publishIds[publishId]
             if self.publish_topic.__contains__(topic):
@@ -192,12 +199,10 @@ class Client:
         
     def start_heartbeat(self):
         while True:
-            print("beat")
             self.client.publish(self.heartbeat_topic, f"beat", qos=1)
             time.sleep(self.heartbeat_interval)
            
     def start_loop(self):
         while True:
-            print("loop")
             self.client.loop()
             time.sleep(1)

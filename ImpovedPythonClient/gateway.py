@@ -9,19 +9,12 @@ class Gateway:
         self.create_client(clientFileParth, name)
 
         self.client.connect_to_broker()
-        thread = threading.Thread(self.client.start_heartbeat())
-        thread.daemon = True
-        thread.start()
-        
-        thread2 = threading.Thread(self.client.start_loop())
-        thread2.daemon = True
-        thread2.start()
 
     def publish_query(self, cypher, target_node, data_type, publish_id):
         self.client.send_pub_query(publish_id, cypher, target_node, data_type)
 
-    def subscribe_query(self, cypher, target_node, on_data_received_function, transformations=None):
-        self.client.send_sub_query(on_data_received_function, 5, cypher, target_node, transformations)
+    def subscribe_query(self, cypher, target_node, on_data_received_function, id, transformations=None):
+        self.client.send_sub_query(on_data_received_function, id, cypher, target_node, transformations)
 
     def create_client(self, clientFileParth, clientId):
         with open(clientFileParth, "r") as file:
@@ -40,3 +33,11 @@ class Gateway:
 
     def publish_data(self, publish_id, data):
         self.client.publishData(data, publish_id)
+
+    def start_heartbeat(self):
+        self.client.start_heartbeat()
+
+    def start_loop(self):
+        self.client.start_loop()
+
+    
