@@ -3,3 +3,6 @@ port: 1883
 
 prefix: "ddps/system/"
 
+user: "admin"
+password: "password"
+

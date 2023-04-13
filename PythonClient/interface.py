@@ -2,7 +2,7 @@ from Client import Client
 import threading
 
 class Interface:
-    client = null
+    client = "null"
     cypher = ""
 
     def publish_query(self, cypher, target_node, data_type, publish_id):

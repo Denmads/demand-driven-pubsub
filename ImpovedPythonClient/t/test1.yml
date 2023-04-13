@@ -1,0 +1,25 @@
+client: 
+  name: "temp1"
+  publishers:
+    pub1:
+      id: 1 #internal id used to ref between publishers and subscribes if one should send something between them
+      source: "random" # Terminal, random or source
+      type: "int"
+      cypher: "!"
+      roles:
+        role1: "user"
+        role2: "admin"
+    pub2:
+      id: 2 #internal id used to ref between publishers and subscribes if one should send something between them
+      source: "random" # Terminal, random or source
+      type: "int"
+      cypher: "!"
+      roles:
+        role1: "user"
+        role2: "admin"
+  subscribers:
+    sub1:
+      id: 1 #internal id used to ref between publishers and subscribes if one should send something between them
+      function: "print" 
+      type: "int"
+      cypher: "!"

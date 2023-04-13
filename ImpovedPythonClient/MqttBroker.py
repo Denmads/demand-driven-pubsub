@@ -37,7 +37,7 @@ class MqttBroker:
     def start_loop(self):
         while True:
             print("loop")
-            self.client.loop()
+            self.client.loop() 
             time.sleep(1)
 
     
