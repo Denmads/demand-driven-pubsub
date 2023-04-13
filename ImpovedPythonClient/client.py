@@ -44,7 +44,7 @@ class Client:
 
         self.connect_topic = f"{prefix}clientmanager/connect"
         self.query_topicc = f"{prefix}{self.id}/query"
-
+        print(self.query_topicc)
         self.heartbeat_topic = f"{prefix}{self.id}/heartbeat"
 
         self.update_topic = f"{prefix}{self.id}/updates"
@@ -169,6 +169,7 @@ class Client:
         self.requests[(self.request_id, )] = "publish"
         self.requestToPublishid[(self.request_id, )] = publishId
         query = """publish<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNode": "{2}", "DataType": "{3}", "PublishId": "{4}" }}""".format(self.request_id, cypher, target_node, data_type, publishId)
+        print(query)
         self.request_id += 1
         self.client.publish(self.query_topicc, query, qos=1)
         return query
