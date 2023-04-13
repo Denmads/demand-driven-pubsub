@@ -1,22 +1,31 @@
 ﻿using ActorBackend.Config;
+using ActorBackend.Data;
 using ActorBackend.Utils;
 using Google.Protobuf.WellKnownTypes;
 using MQTTnet;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using Proto;
+using Proto.Cluster;
+using Proto.Cluster.PubSub;
+using System.Data;
 using static ActorBackend.Actors.SubscriptionQueryResponse.Types;
 
 namespace ActorBackend.Actors
 {
     public class SubscribtionGrain : SubscribtionGrainBase
     {
+        private const string UPDATE_TOPIC = "metadata-update";
+
         private AppConfig config;
         private IMqttClient mqttClient;
+
+        private SubscribeQueryInfo queryInfo;
 
         private string clientId;
         private string clientActorIdentity;
         private string subscribtionId;
+        private string subscriptionTopic;
 
         private List<DataSet> dataSets = new List<DataSet>();
 
@@ -27,11 +36,36 @@ namespace ActorBackend.Actors
             mqttClient = MqttUtil.CreateConnectedClient(Guid.NewGuid().ToString());
         }
 
+        public override Task OnStarted()
+        {
+            Context.Cluster().Subscribe(UPDATE_TOPIC, Context.ClusterIdentity()!);
+            return base.OnStarted();
+        }
+
+        public override Task OnStopping()
+        {
+            Context.Cluster().Unsubscribe(UPDATE_TOPIC, Context.ClusterIdentity()!);
+            return base.OnStopping();
+        }
+
+        public override async Task OnReceive()
+        {
+            if (Context.Message is MetaDataUpdate)
+            {
+                queryInfo.Info.ClientActorIdentity = Context.ClusterIdentity()!.Identity;
+                var neo4jQuery = new Neo4jQuery { SubscribeInfo = queryInfo, Rerun = true };
+                await Context.Cluster().GetQueryResolverGrain(SingletonActorIdentities.QUERY_RESOLVER)
+                    .ResolveQuery(neo4jQuery, CancellationToken.None);
+            }
+        }
+
         public override Task Create(SubscriptionGrainCreateInfo request)
         {
             clientId = request.ClientId;
             clientActorIdentity = request.ClientActorIdentity;
             subscribtionId = request.SubscribtionId;
+            queryInfo = request.QueryInfo;
+            subscriptionTopic = request.SubscriptionTopic;
             
 
             foreach (var collection in request.Query.NodeCollections)
@@ -51,6 +85,37 @@ namespace ActorBackend.Actors
             {
                 dataSet.NotifyOfDependentStateChange(clientActorIdentity, request.State == State.Alive, Context);
             }
+
+            return Task.CompletedTask;
+        }
+
+        public override Task QueryResult(QueryResponse request)
+        {
+            //Gets called when the metadata model updates and the subscribtion reruns the query
+
+            //Check if any existing datasets should be removed
+            List<DataSet> toRemove = new List<DataSet>();
+            foreach (var ds in dataSets)
+            {
+                if (request.SubscribeResponse.NodeCollections.All(ns => !ds.MatchesCollection(ns))) {
+                    toRemove.Add(ds);
+                }
+            }
+            toRemove.ForEach(ds => dataSets.Remove(ds));
+
+
+            //Checks if any collection does not exist
+            foreach (var collection in request.SubscribeResponse.NodeCollections)
+            {
+                var exists = dataSets.Any(ds => ds.MatchesCollection(collection));
+                if (!exists)
+                {
+                    var dataset = new DataSet(collection, mqttClient, subscriptionTopic, subscribtionId);
+                    dataset.NotifyOfDependentStateChange(clientActorIdentity, true, Context);
+                    dataSets.Add(dataset);
+                }
+            }
+
 
             return Task.CompletedTask;
         }
@@ -91,7 +156,7 @@ namespace ActorBackend.Actors
                 {
                     lastValues[dataNode.Key] = value;
 
-                    SendUpdatedDataSet();
+                    SendUpdatedDataSet(dataNode.Key);
 
                     break;
                 }
@@ -100,9 +165,13 @@ namespace ActorBackend.Actors
             return Task.CompletedTask;
         }
 
-        private void SendUpdatedDataSet()
+        private void SendUpdatedDataSet(string changedNode)
         {
-            var dataJson = new { SubscriptionId = subId, Data = new Dictionary<string, DataNode>()};
+            var dataJson = new { 
+                SubscriptionId = subId,
+                ChangedNode = changedNode,
+                Data = new Dictionary<string, DataNode>()
+            };
 
             foreach (var dataNode in nodeCollection.Nodes)
             {
@@ -137,6 +206,12 @@ namespace ActorBackend.Actors
                 else
                     context.GetClientGrain(notifyInfo.OwningClient).StopPublishDependency(message, CancellationToken.None);
             }
+        }
+
+        public bool MatchesCollection(DataNodeCollection other)
+        {
+            var topics = nodeCollection.Nodes.Select(nd => nd.Value.Topic);
+            return other.Nodes.All(n => topics.Contains(n.Value.Topic));
         }
 
         class DataNode

@@ -36,7 +36,7 @@ namespace ActorBackend.Actors.Client
                 ClientId = request.ClientId
             };
 
-            var queryResponse = $"dependency-${(request.State == State.Dead ? "died" : "resurrected")}<>{JsonConvert.SerializeObject(json)}";
+            var queryResponse = $"dependency-{(request.State == State.Dead ? "died" : "resurrected")}<>{JsonConvert.SerializeObject(json)}";
 
             var applicationMessage = new MqttApplicationMessageBuilder()
                 .WithTopic(MqttTopicHelper.ClientUpdates(clientId!))

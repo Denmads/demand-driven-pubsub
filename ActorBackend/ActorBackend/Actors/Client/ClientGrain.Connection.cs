@@ -72,6 +72,8 @@ namespace ActorBackend.Actors.Client
                 connectionState = new ClientConnectionState(mqttClient, request.ConnectionTimeout, clientId);
                 connectionState.onConnectionDied = () =>
                 {
+                    logger.LogInformation($"connection died");
+                    
                     //Notify dependents
                     foreach (var publish in publishes)
                     {
@@ -89,6 +91,8 @@ namespace ActorBackend.Actors.Client
 
                 connectionState.onConnectionResurrected = () =>
                 {
+                    logger.LogInformation($"connection ressurected");
+
                     //Notify dependents
                     foreach (var publish in publishes)
                     {
