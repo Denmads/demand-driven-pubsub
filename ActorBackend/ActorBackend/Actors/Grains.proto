@@ -30,6 +30,7 @@ service SubscribtionGrain {
 	rpc Create (SubscriptionGrainCreateInfo) returns (google.protobuf.Empty);
 
 	rpc NotifyDependenciesOfStateChange (DependentStateChangedMessage) returns (google.protobuf.Empty);
+	rpc QueryResult (QueryResponse) returns (google.protobuf.Empty);
 }
 
 service UserManagerGrain {

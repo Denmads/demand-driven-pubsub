@@ -3,13 +3,22 @@ using ActorBackend.Utils;
 using Neo4j.Driver;
 using Proto;
 using Proto.Cluster;
-using IResult = Neo4j.Driver.IResult;
+using Proto.Cluster.PubSub;
 
 namespace ActorBackend.Actors.Neo4jGrain
 {
 
+
     public partial class Neo4jQueryGrain : Neo4jQueryGrainBase
     {
+        private IPublisher protoPublisher;
+        private Neo4j.Driver.ISession neo4jSession;
+        public Neo4jQueryGrain(IContext context, IDriver neo4jDriver) : base(context)
+        {
+            neo4jSession = neo4jDriver.Session();
+            protoPublisher = Context.Cluster().Publisher();
+        }
+
         private List<IRecord> ExecuteCypher(string cypher, bool write = false)
         {
             if (write)
@@ -44,7 +53,7 @@ namespace ActorBackend.Actors.Neo4jGrain
                 }
                 else if (request.QueryTypeCase == Neo4jQuery.QueryTypeOneofCase.SubscribeInfo)
                 {
-                    await ResolveSubscribeQuery(request.SubscribeInfo);
+                    await ResolveSubscribeQuery(request.SubscribeInfo, request.Rerun);
                 }
                 else if (request.QueryTypeCase == Neo4jQuery.QueryTypeOneofCase.CreateUserInfo)
                 {

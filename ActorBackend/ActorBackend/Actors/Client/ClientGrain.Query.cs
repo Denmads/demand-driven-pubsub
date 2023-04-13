@@ -216,7 +216,8 @@ namespace ActorBackend.Actors.Client
 
             Context.Cluster().GetSubscribtionGrain(subGrainId).Create(
                 new SubscriptionGrainCreateInfo { ClientActorIdentity = Context.ClusterIdentity()!.Identity,
-                                                  ClientId = clientId, SubscribtionId = subId, SubscriptionTopic = topic, Query = response},
+                                                  ClientId = clientId, SubscribtionId = subId, SubscriptionTopic = topic, 
+                                                  Query = response, QueryInfo = response.Query},
                 CancellationToken.None
             );
 
