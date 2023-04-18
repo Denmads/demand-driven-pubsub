@@ -193,6 +193,31 @@ class BaseClient:
                     "Steps": [
                         "5+st"
                     ]
+                },
+                {
+                    "StoredIn": "temp2",
+                    "Steps": [
+                        "st-5"
+                    ]
+                },
+                {
+                    "StoredIn": "temp3",
+                    "Steps": [
+                        "sc*2"
+                    ]
+                },
+                {
+                    "StoredIn": "temp4",
+                    "Steps": [
+                        "sc/10"
+                    ]
+                },
+                {
+                    "StoredIn": "temp5",
+                    "Steps": [
+                        "st+sc",
+                        "prev+5"
+                    ]
                 }
             ]
         }

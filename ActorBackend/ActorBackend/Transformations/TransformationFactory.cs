@@ -73,5 +73,77 @@ namespace ActorBackend.Transformations
                 throw new InvalidDataException("Invalid types for add operation.");
             }
         }
+
+        public ITransformStep CreateSubStep(string step)
+        {
+            var tokens = step.Split("-");
+            var inputs = tokens.Select(t => CreateInput(t)).ToList();
+
+            if (inputs.All(inp => inp.GetType() == "int"))
+            {
+                return new SubStep<int>((IInput<int>)inputs[0], (IInput<int>)inputs[1]);
+            }
+            else if (inputs.All(inp => inp.GetType() == "float"))
+            {
+                return new SubStep<float>((IInput<float>)inputs[0], (IInput<float>)inputs[1]);
+            }
+            else
+            {
+                throw new InvalidDataException("Invalid types for sub operation.");
+            }
+        }
+
+        public ITransformStep CreateMulStep(string step)
+        {
+            var tokens = step.Split("*");
+            var inputs = tokens.Select(t => CreateInput(t)).ToList();
+
+            if (inputs.All(inp => inp.GetType() == "int"))
+            {
+                return new MulStep<int>((IInput<int>)inputs[0], (IInput<int>)inputs[1]);
+            }
+            else if (inputs.All(inp => inp.GetType() == "float"))
+            {
+                return new MulStep<float>((IInput<float>)inputs[0], (IInput<float>)inputs[1]);
+            }
+            else
+            {
+                throw new InvalidDataException("Invalid types for mul operation.");
+            }
+        }
+
+        public ITransformStep CreateDivStep(string step)
+        {
+            var tokens = step.Split("/");
+            var inputs = tokens.Select(t => CreateInput(t)).ToList();
+
+            if (inputs.All(inp => inp.GetType() == "int"))
+            {
+                return new DivStep<int>((IInput<int>)inputs[0], (IInput<int>)inputs[1]);
+            }
+            else if (inputs.All(inp => inp.GetType() == "float"))
+            {
+                return new DivStep<float>((IInput<float>)inputs[0], (IInput<float>)inputs[1]);
+            }
+            else
+            {
+                throw new InvalidDataException("Invalid types for div operation.");
+            }
+        }
+
+        public ITransformStep CreateLenFuncStep(string step)
+        {
+            var token = step.Substring(4, step.Length-5);
+            var input = CreateInput(token);
+
+            if (input.GetType() == "string")
+            {
+                return new LenFuncStep((IInput<string>)input);
+            }
+            else
+            {
+                throw new InvalidDataException("Invalid types for div operation.");
+            }
+        }
     }
 }

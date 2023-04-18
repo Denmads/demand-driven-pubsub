@@ -36,9 +36,25 @@ namespace ActorBackend.Transformations
                 {
                     return factory.CreateAddStep(st);
                 }
+                else if (st.Contains("-"))
+                {
+                    return factory.CreateSubStep(st);
+                }
+                else if (st.Contains("*"))
+                {
+                    return factory.CreateMulStep(st);
+                }
+                else if (st.Contains("/"))
+                {
+                    return factory.CreateDivStep(st);
+                }
+                else if (st.StartsWith("len(") && st.EndsWith(")"))
+                {
+                    return factory.CreateLenFuncStep(st);
+                }
 
                 return null;
-            }).ToList().As<List<ITransformStep>>();
+            }).Where(st => st != null).ToList().As<List<ITransformStep>>();
         }
     }
 }
