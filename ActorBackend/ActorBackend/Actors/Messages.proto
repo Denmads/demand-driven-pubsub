@@ -119,6 +119,17 @@ message SubscriptionGrainCreateInfo {
 	string subscription_topic = 4;
 	SubscribeQueryInfo query_info = 5;
 	SubscriptionQueryResponse query = 6;
+	TransformationSpecification transformations = 7;
+}
+
+message TransformationSpecification {
+	repeated string to_remove = 1;
+	repeated Transformation changes = 2;
+
+	message Transformation {
+		string stored_in = 1;
+		repeated string steps = 2;
+	}
 }
 
 message DependencyMessage {
@@ -140,4 +151,18 @@ message DependencyStateChangedMessage {
 
 message DependentStateChangedMessage {
 	State state = 1;
+}
+
+message TransformerGrainCreateInfo {
+	TransformationSpecification transformations = 1;
+	SubscriptionQueryResponse.DataNodeCollection node_collection = 2;
+}
+
+message Data {
+	message Node {
+		string data_type = 1;
+		string value = 2;
+	}
+
+	map<string, Node> data = 1;
 }

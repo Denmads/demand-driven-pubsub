@@ -65,6 +65,13 @@ namespace ActorBackend.Config
                         new SubscribtionGrainActor((context, clusterIdentity) =>
                             new SubscribtionGrain(context, config)
                         ))
+                )
+                .WithClusterKind(
+                    kind: TransformerGrainActor.Kind,
+                    prop: Props.FromProducer(() =>
+                        new TransformerGrainActor((context, clusterIdentity) =>
+                            new TransformerGrain(context)
+                        ))
                 );
 
 

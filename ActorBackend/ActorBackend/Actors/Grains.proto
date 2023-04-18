@@ -33,5 +33,11 @@ service SubscribtionGrain {
 	rpc QueryResult (QueryResponse) returns (google.protobuf.Empty);
 }
 
+service TransformerGrain {
+	rpc Create (TransformerGrainCreateInfo) returns (google.protobuf.Empty);
+
+	rpc TransformData (Data) returns (Data);
+}
+
 service UserManagerGrain {
 }
