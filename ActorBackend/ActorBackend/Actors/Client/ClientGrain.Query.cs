@@ -183,6 +183,7 @@ namespace ActorBackend.Actors.Client
             }
             else if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.ErrorResponse)
             {
+                pendingQueries.Remove(request.RequestId);
                 applicationMessage = CreateQueryErrorResponseMessage(request.RequestId, request.ErrorResponse);
             }
             else if (request.QueryTypeCase == QueryResponse.QueryTypeOneofCase.SuccessResponse)
