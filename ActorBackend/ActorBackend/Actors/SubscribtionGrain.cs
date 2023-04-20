@@ -27,6 +27,8 @@ namespace ActorBackend.Actors
         private string subscribtionId;
         private string subscriptionTopic;
 
+        private TransformerGrainClient? transformerGrain = null;
+
         private List<DataSet> dataSets = new List<DataSet>();
 
         public SubscribtionGrain(IContext context, AppConfig config) : base(context)
@@ -67,10 +69,22 @@ namespace ActorBackend.Actors
             queryInfo = request.QueryInfo;
             subscriptionTopic = request.SubscriptionTopic;
             
+            if (request.Transformations != null)
+            {
+                transformerGrain = Context.Cluster().GetTransformerGrain(Context.ClusterIdentity()!.Identity + ".Transformer");
+                transformerGrain.Create(
+                    new TransformerGrainCreateInfo { 
+                        Transformations = request.Transformations, 
+                        NodeCollection = request.Query.NodeCollections.ElementAt(0) 
+                    },
+                    CancellationToken.None
+                    );
+            }
+
 
             foreach (var collection in request.Query.NodeCollections)
             {
-                var dataset = new DataSet(collection, mqttClient, request.SubscriptionTopic, subscribtionId);
+                var dataset = new DataSet(collection, mqttClient, request.SubscriptionTopic, subscribtionId, transformerGrain);
                 dataset.NotifyOfDependentStateChange(clientActorIdentity, true, Context);
 
                 dataSets.Add(dataset);
@@ -110,7 +124,7 @@ namespace ActorBackend.Actors
                 var exists = dataSets.Any(ds => ds.MatchesCollection(collection));
                 if (!exists)
                 {
-                    var dataset = new DataSet(collection, mqttClient, subscriptionTopic, subscribtionId);
+                    var dataset = new DataSet(collection, mqttClient, subscriptionTopic, subscribtionId, transformerGrain);
                     dataset.NotifyOfDependentStateChange(clientActorIdentity, true, Context);
                     dataSets.Add(dataset);
                 }
@@ -131,12 +145,15 @@ namespace ActorBackend.Actors
         private string sendTopic;
         private string subId;
 
-        public DataSet(DataNodeCollection nodeCollection, IMqttClient mqttClient, string topic, string subId)
+        private TransformerGrainClient? transformer;
+
+        public DataSet(DataNodeCollection nodeCollection, IMqttClient mqttClient, string topic, string subId, TransformerGrainClient? transformer)
         {
             this.nodeCollection = nodeCollection;
             this.mqttClient = mqttClient;
             this.sendTopic = topic;
             this.subId = subId;
+            this.transformer = transformer;
 
             mqttClient.ApplicationMessageReceivedAsync += MessageReceived;
 
@@ -165,21 +182,37 @@ namespace ActorBackend.Actors
             return Task.CompletedTask;
         }
 
-        private void SendUpdatedDataSet(string changedNode)
+        private async void SendUpdatedDataSet(string changedNode)
         {
             var dataJson = new { 
                 SubscriptionId = subId,
                 ChangedNode = changedNode,
                 Data = new Dictionary<string, DataNode>()
             };
-
             foreach (var dataNode in nodeCollection.Nodes)
             {
                 var node = new DataNode { Value = lastValues.GetValueOrDefault(dataNode.Key, ""), DataType = dataNode.Value.DataType };
                 dataJson.Data.Add(dataNode.Key, node);
             }
 
-            var queryResponse = $"´data-set<>{JsonConvert.SerializeObject(dataJson)}";
+            if (transformer != null)
+            {
+                var tData = new Data();
+                foreach (var kvp in dataJson.Data)
+                {
+                    tData.Data_.Add(kvp.Key, kvp.Value.ToProtoNode());
+                }
+
+                var transformedData = await transformer.TransformData(tData, CancellationToken.None)!;
+                dataJson.Data.Clear();
+
+                foreach (var kvp in transformedData!.Data_)
+                {
+                    dataJson.Data.Add(kvp.Key, DataNode.FromProtoNode(kvp.Value));
+                }
+            }
+
+            var queryResponse = $"data-set<>{JsonConvert.SerializeObject(dataJson)}";
 
             var applicationMessage = new MqttApplicationMessageBuilder()
                 .WithTopic(sendTopic)
@@ -188,7 +221,7 @@ namespace ActorBackend.Actors
                 .Build();
             
 
-            mqttClient.PublishAsync(applicationMessage);
+            await mqttClient.PublishAsync(applicationMessage);
         }
 
         public void NotifyOfDependentStateChange(string clientActorIdentity, bool alive, IContext context)
@@ -216,8 +249,21 @@ namespace ActorBackend.Actors
 
         class DataNode
         {
+
             public string Value { get; set; }
             public string DataType { get; set; }
+
+
+
+            public Data.Types.Node ToProtoNode()
+            {
+                return new Data.Types.Node { DataType = DataType, Value = Value };
+            }
+
+            public static DataNode FromProtoNode(Data.Types.Node node)
+            {
+                return new DataNode { DataType = node.DataType, Value = node.Value };
+            }
         }
     }
 }

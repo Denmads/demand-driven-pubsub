@@ -56,6 +56,12 @@ namespace ActorBackend.Actors.Neo4jGrain
                 res.Add(nodes);
             }
 
+            if (res.Count == 0)
+                throw new InvalidOperationException("No data selected by query");
+
+            if (res.Count > 1)
+                EnsureSameDataSchemaAcrossDataSets(res);
+
             var queryResult = new SubscriptionQueryResponse() { Query = request};
             res.ForEach(dict =>
             {
@@ -72,6 +78,8 @@ namespace ActorBackend.Actors.Neo4jGrain
 
                 queryResult.NodeCollections.Add(collection);
             });
+
+            
 
             var response = new QueryResponse { RequestId = request.Info.RequestId, SubscribeResponse = queryResult };
             if (rerun)
@@ -93,6 +101,22 @@ namespace ActorBackend.Actors.Neo4jGrain
                                     .ToArray();
 
             return HasRoles(user, requiredRoles);
+        }
+
+        private void EnsureSameDataSchemaAcrossDataSets(SubscribtionQueryResult res)
+        {
+            var firstDataset = res[0];
+
+            foreach (var kvp in firstDataset)
+            {
+                var allSameType = res.All(ds =>
+                {
+                    return ds[kvp.Key].DataType == kvp.Value.DataType;
+                });
+
+                if (!allSameType)
+                    throw new InvalidDataException($"All datatypes for the key '{kvp.Key}' is not the same.");
+            }
         }
     }
 }

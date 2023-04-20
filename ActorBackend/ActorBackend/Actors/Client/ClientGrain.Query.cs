@@ -8,12 +8,14 @@ using System.Text;
 using Newtonsoft.Json;
 using ActorBackend.Data;
 using ActorBackend.Utils;
+using ActorBackend.Transformations;
 
 namespace ActorBackend.Actors.Client
 {
     public partial class ClientGrain : ClientGrainBase
     {
-        private Dictionary<int, string> pendingQueries = new Dictionary<int, string>();
+        private Dictionary<int, string> pendingPubQueries = new Dictionary<int, string>();
+        private Dictionary<int, SubscribeQuery> pendingSubQueries = new Dictionary<int, SubscribeQuery>();
         private Dictionary<string, PublishState> publishes = new Dictionary<string, PublishState>();
         private Dictionary<string, string> subscribeTopics = new Dictionary<string, string>();
 
@@ -30,7 +32,7 @@ namespace ActorBackend.Actors.Client
                 return Task.CompletedTask;
             }
 
-            pendingQueries.Add(query.RequestId, query.PublishId);
+            pendingPubQueries.Add(query.RequestId, query.PublishId);
 
             var publishQuery = new PublishQueryInfo
             {
@@ -89,7 +91,7 @@ namespace ActorBackend.Actors.Client
 
             });
 
-            pendingQueries.Add(query.RequestId, query.SubscriptionId);
+            pendingSubQueries.Add(query.RequestId, query);
 
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             queryResolver.ResolveQuery(new Neo4jQuery { SubscribeInfo = queryInfo }, CancellationToken.None);
@@ -198,29 +200,43 @@ namespace ActorBackend.Actors.Client
 
         private void HandlePublishResponse(int requestId, PublishQueryResponse response)
         {
-            publishes[response.Topic] = new PublishState(clientId!, mqttClient, pendingQueries[requestId], Context);
-            pendingQueries.Remove(requestId);
+            publishes[response.Topic] = new PublishState(clientId!, mqttClient, pendingPubQueries[requestId], Context);
+            pendingPubQueries.Remove(requestId);
         }
 
         private bool HandleSubscribeResponse(int requestId, SubscriptionQueryResponse response, string topic)
         {
-            var subId = pendingQueries.GetValueOrDefault(requestId, "");
-            if (subId == "")
+            var subQuery = pendingSubQueries!.GetValueOrDefault(requestId, null);
+            if (subQuery == null)
             {
                 return false;
             }
 
-            subscribeTopics[subId] = topic;
-            pendingQueries.Remove(requestId);   
+            subscribeTopics[subQuery.SubscriptionId] = topic;
+            pendingSubQueries.Remove(requestId);
 
-            string subGrainId = $"{clientId}.{subId}";
 
-            Context.Cluster().GetSubscribtionGrain(subGrainId).Create(
-                new SubscriptionGrainCreateInfo { ClientActorIdentity = Context.ClusterIdentity()!.Identity,
-                                                  ClientId = clientId, SubscribtionId = subId, SubscriptionTopic = topic, 
-                                                  Query = response, QueryInfo = response.Query},
-                CancellationToken.None
-            );
+            var info = new SubscriptionGrainCreateInfo
+            {
+                ClientActorIdentity = Context.ClusterIdentity()!.Identity,
+                ClientId = clientId,
+                SubscribtionId = subQuery.SubscriptionId,
+                SubscriptionTopic = topic,
+                Query = response,
+                QueryInfo = response.Query
+            };
+
+            if (subQuery.Transformations != null)
+            {
+                info.Transformations = subQuery.Transformations.ToSpecification();
+            }
+            else
+            {
+                info.Transformations = null;
+            }
+
+            string subGrainId = $"{clientId}.{subQuery.SubscriptionId}";
+            Context.Cluster().GetSubscribtionGrain(subGrainId).Create(info, CancellationToken.None);
 
             return true;
         }

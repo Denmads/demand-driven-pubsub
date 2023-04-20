@@ -185,7 +185,44 @@ class BaseClient:
         encodedPassword = base64.b64encode(user[1].encode("utf-8")).decode("utf-8") if user is not None else ""
         user_str = f'"Account": "{user[0]}", "AccountPassword": "{encodedPassword}",' if user is not None else ""
         
-        query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}", {4} Transformations: {{ "temp": ["a+b"] }} }}""".format(self.request_id, self.cypher, self.target_node, subscribion_id, user_str)
+        trans = {
+            "RemoveNodes": ["st"],
+            "Changes": [
+                {
+                    "StoredIn": "temp",
+                    "Steps": [
+                        "5+st"
+                    ]
+                },
+                {
+                    "StoredIn": "temp2",
+                    "Steps": [
+                        "st-5"
+                    ]
+                },
+                {
+                    "StoredIn": "temp3",
+                    "Steps": [
+                        "sc*2"
+                    ]
+                },
+                {
+                    "StoredIn": "temp4",
+                    "Steps": [
+                        "sc/10"
+                    ]
+                },
+                {
+                    "StoredIn": "temp5",
+                    "Steps": [
+                        "st+sc",
+                        "prev+5"
+                    ]
+                }
+            ]
+        }
+        
+        query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}", {4} Transformations: {5} }}""".format(self.request_id, self.cypher, self.target_node, subscribion_id, user_str, json.dumps(trans))
         print(query)
         self.request_id += 1
         self.client.publish(self.query_topicc, query, qos=1)
