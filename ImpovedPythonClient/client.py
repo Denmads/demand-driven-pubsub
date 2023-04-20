@@ -3,6 +3,7 @@ import paho.mqtt.client as mqtt
 import time
 import select
 import json
+import base64
 
 
 class Client:
@@ -97,17 +98,22 @@ class Client:
 
         elif response_type == "reconnect-ack":
             print("reconnect")
-            self.heartbeatInterval = j["HeartbeatInterval"]
-            publishes = j["Publishes"]
-            subscriptions = j["Subscriptions"]
-            for p in publishes:
-                print(p.Id)
-                self.publishIds[p.Id] = p.Topic
-                self.add_publish_topic(p.Topic)
-            
-            for s in subscriptions:
-                self.add_subscirbe_topic(s.topic)
-                self.subscriptionId[s.Id] = s.Topic
+            try:
+                self.heartbeatInterval = j["HeartbeatInterval"]
+                publishes = j["Publishes"]
+                subscriptions = j["Subscriptions"]
+                for p in publishes:
+                    print(type(p["Id"]))
+                    self.publishIds[p["Id"]] = p["Topic"]
+                    self.add_publish_topic(p["Topic"])
+                    print(self.publishIds[p["Id"]])
+                
+                for s in subscriptions:
+                    self.add_subscirbe_topic(s["Topic"])
+                    self.subscriptionId[s["Id"]] = s["Topic"]
+            except:
+                print("failed to create the publisher and subscribers")
+
 
         elif response_type == "connect-ack":
             print("connect-ack")
@@ -181,7 +187,7 @@ class Client:
         self.subscriptionId[subscribion_id] = callback
         query = ""
         if transformations == None:
-            query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}", "Account": "{4}", "AccountPassword": "{5}" }}""".format(self.request_id, cypher, target_node, subscribion_id, self.user, self.password)
+            query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}", "Account": "{4}", "AccountPassword": "{5}" }}""".format(self.request_id, cypher, target_node, subscribion_id, self.user, base64.b64encode(self.password.encode('utf-8')))
         else :
             query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}", "Transformations": "{4}" }}""".format(self.request_id, cypher, target_node, subscribion_id, transformations)
         print(query)
@@ -189,8 +195,6 @@ class Client:
         self.client.publish(self.query_topic, query, qos=1)
     
     def publishData(self, data, publishId):
-        print("publish id")
-        print(publishId)
         if self.should_publish:
             topic = self.publishIds[publishId]
             if self.publish_topic.__contains__(topic):
