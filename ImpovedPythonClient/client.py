@@ -37,14 +37,15 @@ class Client:
         self.client = mqtt.Client(id)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
+        print(self.response_topic)  
 
 
     def create_topics(self, prefix):
         self.response_topic = f"{prefix}{self.id}/response"
 
         self.connect_topic = f"{prefix}clientmanager/connect"
-        self.query_topicc = f"{prefix}{self.id}/query"
-        print(self.query_topicc)
+        self.query_topic = f"{prefix}{self.id}/query"
+        print(self.query_topic)
         self.heartbeat_topic = f"{prefix}{self.id}/heartbeat"
 
         self.update_topic = f"{prefix}{self.id}/updates"
@@ -165,26 +166,27 @@ class Client:
         self.subscribe_topics.append(topic)
         self.client.subscribe(topic)
 
-    def send_pub_query(self, publishId, cypher, target_node, data_type):
+    def send_pub_query(self, publishId, cypher, target_node, data_type, roles):
         self.requests[(self.request_id, )] = "publish"
         self.requestToPublishid[(self.request_id, )] = publishId
-        query = """publish<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNode": "{2}", "DataType": "{3}", "PublishId": "{4}" }}""".format(self.request_id, cypher, target_node, data_type, publishId)
+        query = """publish<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNode": "{2}", "DataType": "{3}", "PublishId": "{4}", "Roles": {5} }}""".format(self.request_id, cypher, target_node, data_type, publishId, json.dumps(roles))
         print(query)
         self.request_id += 1
-        self.client.publish(self.query_topicc, query, qos=1)
+        self.client.publish(self.query_topic, query, qos=1)
         return query
 
     def send_sub_query(self, callback, subscribion_id, cypher, target_node, transformations=None):
+        print("sends query:")
         self.requests[(self.request_id, )] = "subscribe"
         self.subscriptionId[subscribion_id] = callback
         query = ""
         if transformations == None:
-            query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}" }}""".format(self.request_id, cypher, target_node, subscribion_id)
+            query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}", "Account": "{4}", "AccountPassword": "{5}" }}""".format(self.request_id, cypher, target_node, subscribion_id, self.user, self.password)
         else :
             query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": {2}, "SubscriptionId": "{3}", "Transformations": "{4}" }}""".format(self.request_id, cypher, target_node, subscribion_id, transformations)
         print(query)
         self.request_id += 1
-        self.client.publish(self.query_topicc, query, qos=1)
+        self.client.publish(self.query_topic, query, qos=1)
     
     def publishData(self, data, publishId):
         print("publish id")

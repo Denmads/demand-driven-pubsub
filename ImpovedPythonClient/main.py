@@ -50,6 +50,7 @@ if file1 and file2 and script:
     time.sleep(10)
 
     try:
+        print("subs:")
         for sub in clientData["client"]["subscribers"]:
             sub_data = clientData["client"]["subscribers"][sub]
             print(sub_data)
@@ -68,11 +69,14 @@ if file1 and file2 and script:
 
 
     try: 
+        print("pubs:")
         for pub in clientData["client"]["publishers"]:
-            print(pub)
             pub_data = clientData["client"]["publishers"][pub]
             print(pub_data)
-            gateway.publish_query(pub_data["cypher"], pub_data["targetNode"], pub_data["type"], pub_data["id"])
+            roles =[]
+            for role in pub_data["roles"]:
+                roles.append(pub_data["roles"][role])
+            gateway.publish_query(pub_data["cypher"], pub_data["targetNode"], pub_data["type"], pub_data["id"], roles)
             if pub_data["source"] == "random":
                 print("starting producing random data for topic ")
                 print(pub_data["id"])
@@ -81,6 +85,7 @@ if file1 and file2 and script:
                 producer_thread.daemon = True
                 producer_thread.start()
     except:
+        print("no pub")
         pass
 
     while True:

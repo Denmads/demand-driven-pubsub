@@ -10,8 +10,8 @@ class Gateway:
 
         self.client.connect_to_broker()
 
-    def publish_query(self, cypher, target_node, data_type, publish_id):
-        self.client.send_pub_query(publish_id, cypher, target_node, data_type)
+    def publish_query(self, cypher, target_node, data_type, publish_id, roles):
+        self.client.send_pub_query(publish_id, cypher, target_node, data_type, roles)
 
     def subscribe_query(self, cypher, target_node, on_data_received_function, id, transformations=None):
         print("sends sub query")
