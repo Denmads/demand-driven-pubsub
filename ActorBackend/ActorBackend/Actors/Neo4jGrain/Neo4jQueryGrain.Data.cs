@@ -56,9 +56,6 @@ namespace ActorBackend.Actors.Neo4jGrain
                 res.Add(nodes);
             }
 
-            if (res.Count == 0)
-                throw new InvalidOperationException("No data selected by query");
-
             if (res.Count > 1)
                 EnsureSameDataSchemaAcrossDataSets(res);
 
