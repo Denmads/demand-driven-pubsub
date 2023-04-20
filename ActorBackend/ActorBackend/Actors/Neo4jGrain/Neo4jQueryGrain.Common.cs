@@ -110,7 +110,7 @@ namespace ActorBackend.Actors.Neo4jGrain
         private bool HasRoles(User user, string[] requiredRoles)
         {
             var roles = GetUserRoles(user);
-            return requiredRoles.All(x => roles.Contains(x));
+            return requiredRoles.Any(x => roles.Contains(x));
         }
 
         private string[] GetUserRoles(User user)
