@@ -5,8 +5,7 @@ client:
       id: "4" #internal id used to ref between publishers and subscribes if one should send something between them
       source: "random" # Terminal, random or source
       type: "int"
-      cypher: "MERGE (b:Building {name: 'OU44'}) \nMERGE (f:Floor {name: 'ground', level: 0}) \nMERGE (r:Room {name: 'O32-602b-0'}) \nMERGE (s:Sensor {type: 'int'}) \nMERGE (b)-[:has]->(f) \nMERGE (f)-[:has]->(r) \nMERGE (r)-[:contains]->(s)"
+      cypher: "MERGE (b:Building {name: 'OU44'}) \nMERGE (f:Floor {name: 'ground', level: 0}) \nMERGE (r:Room {name: 'O32-602b-0'}) \nMERGE (s:Sensor {type: 'temperature'}) \nMERGE (b)-[:has]->(f) \nMERGE (f)-[:has]->(r) \nMERGE (r)-[:contains]->(s)"
       targetNode: "s" 
       roles:
-        role1: "user"
-        role2: "admin"
+        role1: "Admin"

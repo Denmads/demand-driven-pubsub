@@ -2,7 +2,7 @@ client:
   name: "sub1"
   subscribers:
     sub1:
-      id: 1 
+      id: "1" 
       function: "show"
       targetNode: "s" 
       type: "int"

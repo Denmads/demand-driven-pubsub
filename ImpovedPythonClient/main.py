@@ -48,7 +48,7 @@ if file1 and file2 and script:
     loop_thread.daemon = True
     loop_thread.start()
 
-    time.sleep(20)
+    time.sleep(5)
 
     try:
         print("subs:")

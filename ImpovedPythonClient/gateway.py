@@ -14,7 +14,6 @@ class Gateway:
         self.client.send_pub_query(publish_id, cypher, target_node, data_type, roles)
 
     def subscribe_query(self, cypher, target_node, on_data_received_function, id, transformations=None):
-        print("sends sub query")
         self.client.send_sub_query(on_data_received_function, id, cypher, target_node, transformations)
 
     def create_client(self, clientFileParth, clientId):
