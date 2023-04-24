@@ -156,7 +156,7 @@ class Client:
     def on_message(self, client, userdata, msg):
         payload: str = msg.payload.decode('utf-8')
         print(f'Received message on topic {msg.topic}: {payload}')
-        if msg.topic == self.response_topic:
+        if msg.topic == self.response_topic or msg.topic == self.update_topic:
             self.handleResponse(payload)
         
         else:
