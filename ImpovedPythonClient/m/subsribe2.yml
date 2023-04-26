@@ -1,0 +1,9 @@
+client: 
+  name: "mSub4"
+  subscribers:
+    sub1:
+      id: "2" 
+      function: "show"
+      targetNode: ["st", "sc"] 
+      type: "int"
+      cypher: "MATCH (r:Room) MATCH (r)-[:contains]->(st:Sensor {type: 'mCO'}) MATCH (r)-[:contains]->(sc:Sensor {type: 'mH2O'})"

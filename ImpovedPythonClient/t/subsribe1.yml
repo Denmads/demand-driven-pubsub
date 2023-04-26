@@ -4,7 +4,7 @@ client:
     sub1:
       id: "1" 
       function: "show"
-      targetNode: "s" 
+      targetNode: ["s"]
       type: "int"
       cypher: "MATCH (s:Sensor {type: 'temperature'})"
       

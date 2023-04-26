@@ -1,9 +1,10 @@
 client: 
-  name: "transSub2"
+  name: "transSub3"
   subscribers:
     sub1:
       id: "2" 
       function: "show"
-      targetNode: "s" 
+      targetNode: ["s"]
       type: "int"
       cypher: "MATCH (s:Sensor {type: 'transformation'})"
+      Transformations: {"Changes": [{"StoredIn": "temp", "Steps": ["5+s"]}, {"StoredIn": "temp2", "Steps": ["s-5"]}, {"StoredIn": "temp3", "Steps": ["s*2"]}, {"StoredIn": "temp4", "Steps": ["s/10"]}, {"StoredIn": "temp5", "Steps": ["s+20", "prev+5"]}]}
