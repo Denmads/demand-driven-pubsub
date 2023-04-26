@@ -192,7 +192,7 @@ class Client:
         if transformations == None:
             query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": ["{2}"], "SubscriptionId": "{3}", "Account": "{4}", "AccountPassword": "{5}" }}""".format(self.request_id, cypher, target_node, subscribion_id, self.user, base64.b64encode(self.password.encode('utf-8')).decode('utf-8'))
         else :
-            query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": ["{2}"], "SubscriptionId": "{3}", "Transformations": "{4}" }}""".format(self.request_id, cypher, target_node, subscribion_id, transformations)
+            query = """subscribe<>{{"RequestId": {0}, "CypherQuery": "{1}", "TargetNodes": ["{2}"], "SubscriptionId": "{3}", "Transformations": {4} }}""".format(self.request_id, cypher, target_node, subscribion_id, transformations)
         print(query)
         self.request_id += 1
         self.client.publish(self.query_topic, query, qos=1)
