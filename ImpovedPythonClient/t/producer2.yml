@@ -1,0 +1,11 @@
+client: 
+  name: "temp2"
+  publishers:
+    pub1:
+      id: "1" #internal id used to ref between publishers and subscribes if one should send something between them
+      source: "random" # Terminal, random or source
+      type: "int"
+      cypher: "MERGE (b:Building {name: 'OU45'}) \nMERGE (f:Floor {name: 'ground', level: 0}) \nMERGE (r:Room {name: 'O32-602b-0'}) \nMERGE (s:Sensor {type: 'temperature'}) \nMERGE (b)-[:has]->(f) \nMERGE (f)-[:has]->(r) \nMERGE (r)-[:contains]->(s)"
+      targetNode: "s" 
+      roles:
+        role1: "Admin"
