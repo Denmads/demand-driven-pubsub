@@ -96,7 +96,7 @@ namespace ActorBackend.Actors.Client
                     //Notify dependents
                     foreach (var publish in publishes)
                     {
-                        publish.Value.NotifyOfClientConnectionStateChange(false);
+                        publish.Value.NotifyOfClientConnectionStateChange(true);
                     }
 
                     //Notify dependencies

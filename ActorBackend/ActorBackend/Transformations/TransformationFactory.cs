@@ -34,7 +34,7 @@ namespace ActorBackend.Transformations
             {
                 if (toParse == "false" || toParse == "true")
                 {
-                    return new Constant<bool>(bool.Parse(toParse), "string");
+                    return new Constant<bool>(bool.Parse(toParse), "bool");
                 }
                 else if (int.TryParse(toParse, out var res))
                 {
@@ -46,7 +46,7 @@ namespace ActorBackend.Transformations
                 }
                 else
                 {
-                    return new Constant<string>(toParse, "bool");
+                    return new Constant<string>(toParse, "string");
                 }
             }
         }

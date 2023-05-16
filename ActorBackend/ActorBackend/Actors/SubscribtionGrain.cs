@@ -72,11 +72,13 @@ namespace ActorBackend.Actors
             if (request.Transformations != null)
             {
                 transformerGrain = Context.Cluster().GetTransformerGrain(Context.ClusterIdentity()!.Identity + ".Transformer");
+                var message = new TransformerGrainCreateInfo
+                {
+                    Transformations = request.Transformations,
+                    NodeCollection = request.Query.NodeCollections.ElementAt(0)
+                };
                 transformerGrain.Create(
-                    new TransformerGrainCreateInfo { 
-                        Transformations = request.Transformations, 
-                        NodeCollection = request.Query.NodeCollections.ElementAt(0) 
-                    },
+                    message,
                     CancellationToken.None
                     );
             }
