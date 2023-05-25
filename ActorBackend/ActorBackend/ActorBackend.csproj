@@ -29,5 +29,9 @@
     <ProtoGrain Include="Actors/Grains.proto" AdditionalImportDirs="Actors" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="TransformationsV2\" />
+  </ItemGroup>
+
 
 </Project>

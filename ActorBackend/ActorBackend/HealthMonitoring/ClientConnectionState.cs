@@ -25,7 +25,7 @@ namespace ActorBackend.HealthMonitoring
 
         private DateTime lastResponseTime;
 
-        public ClientConnectionState(IMqttClient mqttClient, int connectionTimeoutSeconds, string clientId)
+        public ClientConnectionState(IMqttClient mqttClient, int connectionTimeoutSeconds, int heartbeatInterval, string clientId)
         {
             CurrentState = State.Alive;
             this.mqttClient = mqttClient;
@@ -34,7 +34,7 @@ namespace ActorBackend.HealthMonitoring
 
             lastResponseTime = DateTime.UtcNow;
 
-            checkTimer = new System.Timers.Timer(2000);
+            checkTimer = new System.Timers.Timer(heartbeatInterval);
             checkTimer.Elapsed += CheckTimer_Elapsed;
             checkTimer.Start();
 

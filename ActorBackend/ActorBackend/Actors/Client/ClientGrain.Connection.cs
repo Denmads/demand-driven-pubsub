@@ -69,7 +69,9 @@ namespace ActorBackend.Actors.Client
                 created = true;
                 clientId = request.ClientId;
                 logger = Log.CreateLogger($"client/{clientId}");
-                connectionState = new ClientConnectionState(mqttClient, request.ConnectionTimeout, clientId);
+
+                heartbeatInterval = CalculateHeartbeatIntervalInSeconds(request.ConnectionTimeout);
+                connectionState = new ClientConnectionState(mqttClient, request.ConnectionTimeout, heartbeatInterval, clientId);
                 connectionState.onConnectionDied = () =>
                 {
                     logger.LogInformation($"connection died");
@@ -110,7 +112,7 @@ namespace ActorBackend.Actors.Client
 
                 logger.LogInformation("Connecting client");
 
-                heartbeatInterval = CalculateHeartbeatIntervalInSeconds(request.ConnectionTimeout);
+                
                 json = new { HeartbeatInterval = heartbeatInterval };
 
                 SetupMqttSubscribtions();
