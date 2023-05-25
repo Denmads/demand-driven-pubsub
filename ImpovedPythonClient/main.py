@@ -96,5 +96,5 @@ else:
     print("Invalid input, please provide two file names first broker info, second client info and a Python script name.")
 
 
-    # python .\main.py .\broker-config.yml .\t\producer1.yml ./t/testScript.py
+    # python .\main.py .\broker-config.yml .\t\producer1.yml testScript.py
     # python .\main.py .\broker-config.yml .\t\subsribe1.yml testScript.py

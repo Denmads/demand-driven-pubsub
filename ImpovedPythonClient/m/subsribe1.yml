@@ -1,0 +1,12 @@
+client: 
+  name: "mSub1"
+  subscribers:
+    sub1:
+      id: "1" 
+      function: "show"
+      targetNode: ["st", "sc"] 
+      type: "int"
+      cypher: "MATCH (r:Room) MATCH (r)-[:contains]->(st:Sensor {type: 'mCO'}) MATCH (r)-[:contains]->(sc:Sensor {type: 'mH2O'})"
+      Transformations: {"RemoveNodes": ["st"], "Changes": [{"StoredIn": "temp", "Steps": ["5+st"]}, {"StoredIn": "temp2", "Steps": ["sc-5"]}, {"StoredIn": "temp3", "Steps": ["st*2"]}, {"StoredIn": "temp4", "Steps": ["sc/10"]}, {"StoredIn": "temp5", "Steps": ["st+sc", "prev+5"]}]}
+
+
